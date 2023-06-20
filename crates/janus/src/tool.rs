@@ -1,9 +1,20 @@
 use std::{fmt, fmt::Debug};
 
-#[derive(Debug)]
+use derive_builder::Builder;
+
+#[derive(Debug, Clone)]
 pub struct ToolRunExample {
     input: String,
     output: String,
+}
+
+impl Into<ToolRunExample> for (String, String) {
+    fn into(self) -> ToolRunExample {
+        ToolRunExample {
+            input: self.0,
+            output: self.1,
+        }
+    }
 }
 
 impl ToolRunExample {
@@ -21,19 +32,13 @@ impl fmt::Display for ToolRunExample {
     }
 }
 
-pub struct ToolExecutorFn(Box<dyn Fn(dyn fmt::Display) -> dyn fmt::Display>);
-
-impl fmt::Debug for ToolExecutorFn {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ToolExecutorFn")
-    }
-}
-
+#[derive(Default, Builder)]
+#[builder(setter(into))]
 pub struct Tool {
     pub name: String,
     pub description: String,
     pub examples: Vec<ToolRunExample>,
-    pub executor: ToolExecutor,
+    pub executor: Option<ToolExecutor>,
 }
 
 impl Debug for Tool {
@@ -46,26 +51,13 @@ impl Debug for Tool {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum ToolExecutor {
     Command(String),
-    Function(ToolExecutorFn),
+    Function(fn(&str) -> Option<String>),
 }
 
 impl Tool {
-    pub fn new(
-        name: &str,
-        description: &str,
-        examples: Vec<ToolRunExample>,
-        executor: ToolExecutor,
-    ) -> Self {
-        Tool {
-            name: name.to_string(),
-            description: description.to_string(),
-            examples,
-            executor,
-        }
-    }
-
     pub fn prompt(&self) -> String {
         let mut prompt = String::new();
         let title = format!("{}: {}", self.name, self.description);
@@ -75,5 +67,21 @@ impl Tool {
             prompt.push_str(&format!(" - Input: {}, output: {}\n", input, output));
         }
         prompt
+    }
+
+    pub fn run(&self, input: &str) -> Option<String> {
+        if let Some(executor) = &self.executor {
+            match executor {
+                ToolExecutor::Command(command) => {
+                    todo!("Implement running tools with commands.")
+                }
+                ToolExecutor::Function(function) => {
+                    let output = (function)(input);
+                    output
+                }
+            }
+        } else {
+            todo!("Implement running tools without executors.");
+        }
     }
 }

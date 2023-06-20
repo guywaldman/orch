@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use derive_builder::Builder;
+use openai::chat::ChatCompletionMessage;
 
 #[derive(Debug, Default, Builder)]
 #[builder(setter(into))]
@@ -11,7 +12,7 @@ pub struct TextCompletionConfig {
 
 #[async_trait]
 pub trait TextCompletionLlm {
-    async fn complete(&self, input: &str) -> String;
+    async fn complete(&self, messages: &[String]) -> String;
 }
 
 pub struct LlmBuilder {
@@ -21,7 +22,10 @@ pub struct LlmBuilder {
 pub mod third_party_llm {
     use super::*;
     use async_trait::async_trait;
-    use openai::{completions::Completion, set_key};
+    use openai::{
+        chat::{ChatCompletion, ChatCompletionMessage, ChatCompletionMessageRole},
+        set_key,
+    };
 
     pub struct OpenAi<'a> {
         pub model: &'a str,
@@ -38,16 +42,24 @@ pub mod third_party_llm {
 
     #[async_trait]
     impl TextCompletionLlm for OpenAi<'_> {
-        async fn complete(&self, input: &str) -> String {
-            let completion = Completion::builder(self.model)
-                .prompt(input)
+        async fn complete(&self, system_prompts: &[String]) -> String {
+            let system_msgs = system_prompts
+                .iter()
+                .map(|p| ChatCompletionMessage {
+                    name: None,
+                    role: ChatCompletionMessageRole::System,
+                    content: p.to_owned(),
+                })
+                .collect::<Vec<_>>();
+
+            let completion = ChatCompletion::builder(self.model, system_msgs)
                 .max_tokens(self.config.max_tokens as u16)
                 .temperature(self.config.temperature)
                 .create()
                 .await
                 .unwrap();
-            let result = completion.unwrap().choices.first().unwrap().text.clone();
-            result
+            let result = completion.unwrap().choices.first().unwrap().message.clone();
+            result.content
         }
     }
 }
