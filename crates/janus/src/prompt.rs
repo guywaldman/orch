@@ -1,3 +1,3 @@
 pub trait Prompt {
-    fn prompt(&self) -> String;
+    fn prompt(&self, input: &str) -> String;
 }
