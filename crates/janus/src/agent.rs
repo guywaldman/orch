@@ -1,36 +1,33 @@
-use crate::{prompt::Prompt, tool::Tool, utils::format_list};
+use crate::{llm::TextCompletionLlm, prompt::Prompt, tool::Tool, utils::format_list};
 
 pub struct Agent {
     pub tools: Vec<Tool>,
-    pub llm: Box<LlmFn>,
+    pub llm: Box<dyn TextCompletionLlm>,
 }
-
-pub type LlmFn = dyn Fn(String) -> String;
 
 pub struct AgentBuilder {
     tools: Vec<Tool>,
-    llm: Option<Box<LlmFn>>,
+    llm: Option<Box<dyn TextCompletionLlm>>,
+}
+
+// TODO: Change into a result graph.
+#[derive(Debug)]
+pub struct RunResult {
+    pub output: String,
 }
 
 impl Agent {
-    pub fn new(llm: Box<LlmFn>) -> Self {
+    pub fn new(llm: Box<dyn TextCompletionLlm>) -> Self {
         Agent {
             tools: Vec::new(),
             llm: llm,
         }
     }
 
-    pub fn start(self) -> ActiveAgent {
-        ActiveAgent {
-            agent: self,
-            history: Vec::new(),
-        }
+    pub async fn run<'a>(self, task: &'a str) -> RunResult {
+        let result = self.llm.complete(task).await;
+        RunResult { output: result }
     }
-}
-
-pub struct ActiveAgent {
-    agent: Agent,
-    history: Vec<String>,
 }
 
 enum AgentRunMessage {
@@ -42,29 +39,17 @@ enum AgentRunMessage {
 
 pub struct AgentRun {}
 
-impl ActiveAgent {
-    pub fn new(agent: Agent) -> Self {
-        ActiveAgent {
-            agent,
-            history: Vec::new(),
-        }
-    }
-
-    pub fn prompt(&self) -> String {
-        self.agent.prompt()
-    }
-
-    pub async fn run(&mut self, input: &str) -> AgentRun {
-        todo!();
-    }
-}
-
 impl AgentBuilder {
     pub fn new() -> Self {
-        AgentBuilder {
+        Self {
             tools: Vec::new(),
             llm: None,
         }
+    }
+
+    pub fn with_llm(mut self, llm: Box<dyn TextCompletionLlm>) -> Self {
+        self.llm = Some(llm);
+        self
     }
 
     pub fn with_tool(mut self, tool: Tool) -> Self {
@@ -87,26 +72,29 @@ impl Prompt for Agent {
     fn prompt(&self) -> String {
         let mut prompt = String::new();
         let preface = HELPFUL_AGENT_PREFACE;
-
         prompt.push_str(&format!("{}\n", preface));
-        prompt.push_str("You have access to the following tools:\n");
-        prompt.push_str(
-            &format_list(
-                &self
-                    .tools
-                    .iter()
-                    .map(|tool| {
-                        tool.prompt()
-                            .lines()
-                            .map(|line| format!("  {}", line))
-                            .collect::<Vec<String>>()
-                            .join("\n")
-                    })
-                    .collect::<Vec<String>>(),
-                2,
-            )
-            .as_str(),
-        );
+
+        if !self.tools.is_empty() {
+            prompt.push_str("You have access to the following tools:\n");
+            prompt.push_str(
+                &format_list(
+                    &self
+                        .tools
+                        .iter()
+                        .map(|tool| {
+                            tool.prompt()
+                                .lines()
+                                .map(|line| format!("  {}", line))
+                                .collect::<Vec<String>>()
+                                .join("\n")
+                        })
+                        .collect::<Vec<String>>(),
+                    2,
+                )
+                .as_str(),
+            );
+        }
+
         prompt
     }
 }
