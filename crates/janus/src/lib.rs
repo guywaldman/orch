@@ -1,6 +1,7 @@
 mod agent;
 pub mod llm;
 mod prompt;
+pub mod builtins;
 mod tool;
 mod utils;
 

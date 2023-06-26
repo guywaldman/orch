@@ -1,4 +1,4 @@
-use openai::chat::{ChatCompletionMessageRole, ChatCompletionMessage};
+use std::collections::HashMap;
 
 use crate::{llm::TextCompletionLlm, prompt::Prompt, tool::Tool, utils::format_list};
 
@@ -22,7 +22,7 @@ impl Agent {
     pub fn new(llm: Box<dyn TextCompletionLlm>) -> Self {
         Agent {
             tools: Vec::new(),
-            llm: llm,
+            llm,
         }
     }
 
@@ -32,18 +32,28 @@ impl Agent {
 
         for _ in 1..5 {
             let result = self.llm.complete(&messages).await;
-            let result = result.split("\n\n").last().unwrap().to_owned();
-            dbg!(&messages);
             dbg!(&result);
-            let result: serde_json::Value = serde_json::from_str(&result).unwrap();
+            let result = result.split('\n').last().unwrap().to_owned();
+            // dbg!(&result);
+            if !result.starts_with("Action: ") {
+                return None;
+            }
+            let action_str = result.trim_start_matches("Action: ");
+
+            // dbg!(&action_str);
+            dbg!(&result);
+            let result: serde_json::Value = serde_json::from_str(&action_str).unwrap();
             if result["tool_name"].is_string() {
                 let tool_name = result["tool_name"].to_string();
                 let tool_name = tool_name.replace('\"', "");
-                let input = result["input"].to_string();
+                let mut params = HashMap::new();
+                for (key, value) in result["input"].as_object().unwrap() {
+                    params.insert(key.to_owned(), value.to_string());
+                }
                 let tool_to_run = self.tools.iter().find(|tool| tool.name == tool_name);
                 if let Some(tool_to_run) = tool_to_run {
-                    let tool_result = tool_to_run.run(&input).unwrap();
-                    messages.push(format!("Thought: I ran tool '{}' and got the result: {}\n\nThought: ", tool_name, tool_result));
+                    let tool_result = tool_to_run.run(&params).await.unwrap();
+                    messages.push(format!("Observation: I ran tool '{}' and got the result: {}\n\nThought: ", tool_name, tool_result));
                 } else {
                     todo!("I don't know the tool '{}'.", tool_name);
                 }
@@ -102,55 +112,56 @@ const COT: &str =
 
     Thought: <thought>
     Observation: <observation>
+    Action: <action>
 
-    <JSON object>
+    Where <action> is either a tool or a message (a JSON object).
 
-    Then, return a JSON object depending on what you wish to do.
+    If you wish to run a tool, <action> should look like: { \"tool_name\": \"<tool name>\", \"input\": \"<tool input>\" }
+    Where <tool name> is the name of the tool you wish to run, and <tool input> is the JSON input you wish to give to the tool.
+    If you wish to return a final answer, <action> should look like: { \"message\": \"<message>\" }
 
-    If you wish to run a tool, return the following JSON object:
-    ```json
-    {
-        \"tool_name\": \"<tool name>\",
-        \"input\": \"<tool input>\"
-    }
-    ```
+    Thought: <thought>
+    Observation: <observation>
+    Action: <action>
 
-    If you wish to send a message to the user (when you have completed the task), return the following JSON object:
-    ```json
-    {
-        \"message\": \"<message>\"
-    }
-    ```
+    ...where <action> is either a tool or a message (a JSON object).
 
     In other words, you should start by thinking about the task you are given, make an observation, then (if needed) running a tool, and then sending a message to the user.
-    If you need to run a tool, you should return before the 'Message' step.
 
     Important notes:
+    - Stick to the above format only, and you should *always* return \"Action: <action>\" at the end, where <action> is either a tool or a message (a JSON object).
     - You should not apply your own judgement, **always use a tool**. Do not make any observations that are not based on a tool.
     - You should especially not return any facts, numbers or other information without applying the right tool.
     - You should not use any tools that are not provided to you.
     - You should not use any tools that are not relevant to the task you are given.
+    - When you think you have the answer, stop! Return it to the user (in a JSON!) and phrase it in a concise and informative manner in a JSON object with a 'message' field. Simply return a JSON with the 'message' field.
+    - You should never return a result that is not a JSON object!
     - Stick only to the answer format above.
 
     For example:
     
     USER: What's 4+4?
 
+    ---
     Thought: I need to calculate 4+4.
     Observation: I should use the tool 'calculator'.
+    Action: { \"tool_name\": \"calculator\", \"input\": { \"query\": \"4+4\" } }
+    ---
 
-    You should return:
+    ---
+    Thought: I ran the tool 'calculator' and got the result: 8.
+    Observation: I have the final answer, I can now return the answer to the user.
+    Action: { \"message\": \"The answer is 8.\" }
+    ---
 
-    {
-        \"tool_name\": \"calculator\",
-        \"input\": \"4+4\"
-    }
+    In the above examples, the first JSON you return is the one that tells the user which tool to run.
+    The second JSON you return is the one that tells the user the result of the tool.
 
-    Later, when you have the answer, you should return:
-
-    {
-        \"message\": \"8\"
-    }
+    Remember, *ALWAYS* end with \"Action: <action>\" where <action> is either a tool or a message (a JSON object).
+    Make the JSON valid, and make sure it has the right fields.
+    The JSON should end with '{', end with '}', and have a comma between each field.
+    Each field should be in the format \"<field>\": \"<value>\", where <field> is the name of the field, and <value> is the value of the field.
+    Same JSON validity rules apply to <tool_input>.
 
     This is the task/question:
 ";
@@ -164,7 +175,7 @@ impl Prompt for Agent {
         if !self.tools.is_empty() {
             prompt.push_str("You have access to the following tools:\n");
             prompt.push_str(
-                &format_list(
+                format_list(
                     &self
                         .tools
                         .iter()

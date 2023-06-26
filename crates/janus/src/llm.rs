@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use derive_builder::Builder;
-use openai::chat::ChatCompletionMessage;
+
 
 #[derive(Debug, Default, Builder)]
 #[builder(setter(into))]
