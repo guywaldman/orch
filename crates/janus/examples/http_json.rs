@@ -1,7 +1,6 @@
 use dotenv::dotenv;
 use janus::builtins::tools;
 use janus::*;
-use tokio::task;
 
 #[tokio::main]
 async fn main() {
@@ -22,9 +21,10 @@ async fn main() {
             text_completion_config,
         )))
         .with_tool(tools::http_tool())
+        .with_tool(tools::pdf_summary_tool())
         .build();
 
-    let input = "What's the title of the todo in https://jsonplaceholder.typicode.com/todos/2, followed by the title of the todo in https://jsonplaceholder.typicode.com/todos/3?";
+    let input = "Summarize https://scrumguides.org/docs/scrumguide/v2020/2020-Scrum-Guide-US.pdf";
     let run_result = agent.run(input).await;
     dbg!(&run_result);
 }

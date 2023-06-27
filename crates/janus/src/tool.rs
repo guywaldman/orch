@@ -74,11 +74,18 @@ impl Tool {
         for param_name in &self.parameter_names {
             prompt.push_str(&format!(" - {}\n", param_name));
         }
-        prompt.push_str("\nExample parameters:\n");
+        prompt.push_str("\nExample <tool_input>s:\n");
         for param_examples in &self.parameter_examples {
-            prompt.push_str(&format!(" - {}\n", param_examples.join(", ")));
+            let params: HashMap<String, String> = HashMap::from_iter(
+                self.parameter_names
+                    .iter()
+                    .zip(param_examples.iter())
+                    .map(|(name, example)| (name.to_owned(), example.to_owned())),
+            );
+            prompt.push_str(&format!(" - {}\n", serde_json::to_string(&params).unwrap()));
         }
         prompt.push_str("\nExample Q&A:\n");
+
         for ToolRunExample { input, output, .. } in &self.examples {
             prompt.push_str(&format!(" - Input: {}, output: {}\n", input, output));
         }

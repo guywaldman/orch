@@ -1,4 +1,6 @@
-use crate::{Tool, ToolBuilder, ToolRunExample, ToolParams, ToolExecutor};
+use std::io::Read;
+
+use crate::{Tool, ToolBuilder, ToolExecutor, ToolParams, ToolRunExample};
 
 pub fn http_tool() -> Tool {
     ToolBuilder::default()
@@ -28,4 +30,29 @@ pub fn http_tool() -> Tool {
 				})))
         .build()
 				.expect("Failed to build tool")
+}
+
+pub fn pdf_summary_tool() -> Tool {
+    ToolBuilder::default()
+			.name("summarize_pdf")
+			.description("Given a URL to a PDF, returns a summary of the PDF")
+			.examples(vec![(
+					"What is the summary of https://arxiv.org/pdf/2106.01401.pdf".to_owned(),
+					"{ \"summary\": \"Deep learning has been successfully applied to many tasks in natural language processing, including question answering, machine translation, and document summarization. However, these models are typically trained on large datasets of human-labeled examples. In this paper, we explore the possibility of training a summarization model from a corpus of unlabelled documents, using only a small number of human-written summaries as input. We propose a simple yet effective method for fine-tuning a pretrained language model on a document summarization dataset, and show that it outperforms a number of strong baselines on the CNN/Daily Mail dataset. We also introduce a new dataset of scientific papers called SciTLDR, consisting of 5,000 expert-written summaries of 5,000 scientific papers from multiple disciplines. We show that our method achieves strong performance on this dataset as well.\" }".to_owned(),
+			).into()])
+			.parameter_names(vec!["url".to_owned()])
+			.parameter_examples(vec![
+					vec!["https://arxiv.org/pdf/2106.01401.pdf".to_owned()],
+					vec!["https://gov.uk/government/publications/uk-trade-tariff-eu-referendum-result/uk-trade-tariff.pdf".to_owned()],
+			])
+			.executor(ToolExecutor::Code(|params: ToolParams| Box::pin(async move {
+					let url = params.get("url").unwrap();
+					let client = reqwest::Client::new();
+					let response = client.request(reqwest::Method::GET, url).header("Accept", "application/pdf").send().await.unwrap();
+					let buffer = response.bytes().await.unwrap();
+					let text = pdf_extract::extract_text_from_mem(buffer.as_ref()).unwrap();
+					Some(text)
+			})))
+			.build()
+			.expect("Failed to build tool")
 }

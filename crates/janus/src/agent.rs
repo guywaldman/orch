@@ -32,16 +32,12 @@ impl Agent {
 
         for _ in 1..5 {
             let result = self.llm.complete(&messages).await;
-            dbg!(&result);
             let result = result.split('\n').last().unwrap().to_owned();
-            // dbg!(&result);
             if !result.starts_with("Action: ") {
                 return None;
             }
             let action_str = result.trim_start_matches("Action: ");
 
-            // dbg!(&action_str);
-            dbg!(&result);
             let result: serde_json::Value = serde_json::from_str(&action_str).unwrap();
             if result["tool_name"].is_string() {
                 let tool_name = result["tool_name"].to_string();
@@ -67,13 +63,6 @@ impl Agent {
         }
         None
     }
-}
-
-enum AgentRunMessage {
-    Thought(String),
-    Observation(String),
-    ToolRun(String),
-    Message(String),
 }
 
 pub struct AgentRun {}
@@ -104,6 +93,12 @@ impl AgentBuilder {
     }
 }
 
+impl Default for AgentBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 const HELPFUL_AGENT_PREFACE: &str =
     "You are an helpful agent, designed to answer the following questions as best you can.";
 
@@ -116,8 +111,9 @@ const COT: &str =
 
     Where <action> is either a tool or a message (a JSON object).
 
-    If you wish to run a tool, <action> should look like: { \"tool_name\": \"<tool name>\", \"input\": \"<tool input>\" }
-    Where <tool name> is the name of the tool you wish to run, and <tool input> is the JSON input you wish to give to the tool.
+    If you wish to run a tool, <action> should look like: { \"tool_name\": \"<tool_name>\", \"input\": \"<tool_input>\" }
+    Where <tool_name> is the name of the tool you wish to run, and <tool_input> is the JSON input you wish to give to the tool.
+    <tool_input> should be a JSON and start with a '{' and end with a '}'.
     If you wish to return a final answer, <action> should look like: { \"message\": \"<message>\" }
 
     Thought: <thought>
