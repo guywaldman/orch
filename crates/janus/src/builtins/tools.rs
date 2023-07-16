@@ -1,6 +1,23 @@
+use std::collections::HashMap;
 use std::io::Read;
 
+use serde::{Deserialize, Serialize};
+use serpapi_search_rust::serp_api_search::SerpApiSearch;
+
 use crate::{Tool, ToolBuilder, ToolExecutor, ToolParams, ToolRunExample};
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SerpApiSearchResponse {
+    #[serde(rename = "organic_results")]
+    organic_results: Vec<SerpApiSearchResult>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SerpApiSearchResult {
+    title: Option<String>,
+    link: Option<String>,
+    snippet: Option<String>,
+}
 
 pub fn http_tool() -> Tool {
     ToolBuilder::default()
@@ -52,6 +69,45 @@ pub fn pdf_summary_tool() -> Tool {
 					let buffer = response.bytes().await.unwrap();
 					let text = pdf_extract::extract_text_from_mem(buffer.as_ref()).unwrap();
 					Some(text)
+			})))
+			.build()
+			.expect("Failed to build tool")
+}
+
+async fn web_search_results(query: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let mut params = HashMap::new();
+    params.insert("q".to_string(), query.to_string());
+    params.insert("hl".to_string(), "en".to_string());
+    params.insert("gl".to_string(), "us".to_string());
+    params.insert("google_domain".to_string(), "google.com".to_string());
+
+    let api_key = std::env::var("SERP_API_KEY").expect("SERP_API_KEY not set");
+    let search = SerpApiSearch::google(params, api_key);
+    let results = search.json().await?;
+    let parsed_results = serde_json::from_value::<SerpApiSearchResponse>(results)?;
+    let results = parsed_results.organic_results;
+
+    let results_json = serde_json::to_string(&results)?;
+    Ok(vec![results_json])
+}
+
+pub fn web_search_tool() -> Tool {
+    ToolBuilder::default()
+			.name("web_search")
+			.description("Given a query, returns the top search result from a search engine")
+			.examples(vec![(
+					"What are the top search results for 'hotels in New York'".to_owned(),
+					"{\"results\": [{\"title\": \"AllRecipes\",\"url\": \"https://www.allrecipes.com\"},{\"title\": \"Food Network\",\"url\": \"https://www.foodnetwork.com\"},{\"title\": \"Epicurious\",\"url\": \"https://www.epicurious.com\"},{\"title\": \"BBC Good Food\",\"url\": \"https://www.bbcgoodfood.com\"},{\"title\": \"Tasty\",\"url\": \"https://www.tasty.co\"}]}	".to_owned(),
+			).into()])
+			.parameter_names(vec!["query".to_owned()])
+			.parameter_examples(vec![
+				vec!["cooking recipes".to_owned()],
+				vec!["places to visit in London".to_owned()]
+			])
+			.executor(ToolExecutor::Code(|params: ToolParams| Box::pin(async move {
+					let query = params.get("query").unwrap();
+					let results = web_search_results(query).await.unwrap();
+					Some(results.join("\n"))
 			})))
 			.build()
 			.expect("Failed to build tool")
