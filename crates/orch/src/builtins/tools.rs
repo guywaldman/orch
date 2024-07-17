@@ -1,10 +1,9 @@
 use std::collections::HashMap;
-use std::io::Read;
 
 use serde::{Deserialize, Serialize};
 use serpapi_search_rust::serp_api_search::SerpApiSearch;
 
-use crate::{Tool, ToolBuilder, ToolExecutor, ToolParams, ToolRunExample};
+use crate::{Tool, ToolBuilder, ToolExecutor, ToolParams};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SerpApiSearchResponse {

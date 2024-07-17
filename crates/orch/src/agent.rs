@@ -31,14 +31,14 @@ impl Agent {
         let mut messages = vec![self.prompt(task)];
 
         for _ in 1..5 {
-            let result = self.llm.complete(&messages).await;
+            let result = self.llm.complete(&messages).await.unwrap();
             let result = result.split('\n').last().unwrap().to_owned();
             if !result.starts_with("Action: ") {
                 return None;
             }
             let action_str = result.trim_start_matches("Action: ");
 
-            let result: serde_json::Value = serde_json::from_str(&action_str).unwrap();
+            let result: serde_json::Value = serde_json::from_str(action_str).unwrap();
             if result["tool_name"].is_string() {
                 let tool_name = result["tool_name"].to_string();
                 let tool_name = tool_name.replace('\"', "");

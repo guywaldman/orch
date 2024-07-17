@@ -15,9 +15,9 @@ async fn main() {
         .unwrap();
 
     let agent = AgentBuilder::new()
-        .with_llm(Box::new(third_party_llm::OpenAi::new(
+        .with_llm(Box::new(llm_provider_openai::OpenAi::new(
             api_key,
-            "gpt-3.5-turbo-16k-0613",
+            llm_provider_openai::OpenAiModel::Gpt35Turbo,
             text_completion_config,
         )))
         .with_tool(tools::http_tool())
