@@ -6,14 +6,22 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-gen = "0.2.3"
 async-trait = "0.1.68"
 derive_builder = "0.20.0"
 dotenv = "0.15.0"
+dyn-clone = "1.0.17"
+eventsource-client = "0.12.2"
+futures = "0.3.30"
+httpmock = "0.7.0"
 openai-api-rs = "5.0.2"
 pdf-extract = "0.7.7"
 reqwest = { version = "0.12.5", features = ["blocking"] }
+reqwest-eventsource = "0.6.0"
 serde = { version = "1.0.164", features = ["derive"] }
 serde_json = "1.0.97"
 serpapi-search-rust = "0.1.1"
+thiserror = "1.0.63"
 tokio = { version = "1.28.2", features = ["rt", "macros"] }
+tokio-stream = "0.1.15"
 url = "2.4.0"

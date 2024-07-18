@@ -1,5 +1,6 @@
-pub mod llm;
-pub mod llm_provider_openai;
+mod error;
+mod llm;
+mod llm_provider;
 
 pub use llm::*;
-pub use llm_provider_openai::*;
+pub use llm_provider::*;
