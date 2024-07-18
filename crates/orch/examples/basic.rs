@@ -1,5 +1,3 @@
-use std::pin;
-
 use orch::{Llm, OllamaBuilder, TextCompleteStreamOptions};
 use tokio_stream::StreamExt;
 

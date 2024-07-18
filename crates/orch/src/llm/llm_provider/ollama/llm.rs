@@ -3,7 +3,7 @@ use thiserror::Error;
 use crate::{
     llm::{
         error::LlmError,
-        llm::{Llm, LlmProvider},
+        models::{Llm, LlmProvider},
     },
     OllamaApiModelsMetadata, OllamaEmbeddingsRequest, OllamaEmbeddingsResponse,
     OllamaGenerateRequest, OllamaGenerateResponse, SseClient, TextCompleteOptions,
@@ -102,38 +102,6 @@ pub enum OllamaError {
 }
 
 impl<'a> Ollama<'a> {
-    /// Generates an embedding from the Ollama API.
-    ///
-    /// # Arguments
-    /// * `prompt` - The item to generate an embedding for.
-    ///
-    /// # Returns
-    ///
-    /// A [Result] containing the embedding or an error if there was a problem.
-    fn generate_embedding(&self, prompt: &str) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
-        let client = reqwest::blocking::Client::new();
-        let url = format!("{}/api/embeddings", self.base_url()?);
-        let body = OllamaEmbeddingsRequest {
-            model: self.embedding_model()?,
-            prompt: prompt.to_string(),
-        };
-        let response = client
-            .post(url)
-            .body(
-                serde_json::to_string(&body)
-                    .map_err(|e| OllamaError::Serialization(e.to_string()))?,
-            )
-            .send()
-            .map_err(|e| OllamaError::ApiUnavailable(e.to_string()))?;
-        let body = response
-            .text()
-            .map_err(|e| OllamaError::Api(e.to_string()))?;
-        let response: OllamaEmbeddingsResponse =
-            serde_json::from_str(&body).map_err(|e| OllamaError::Parsing(e.to_string()))?;
-
-        Ok(response.embedding)
-    }
-
     /// Lists the running models in the Ollama API.
     ///
     /// # Returns
@@ -152,11 +120,12 @@ impl<'a> Ollama<'a> {
     // /// # Returns
     // ///
     // /// A [Result] containing the list of local models or an error if there was a problem.
-    // pub fn list_local_models(&self) -> Result<OllamaApiModelsMetadata, OllamaApiClientError> {
-    //     let response = self.get_from_ollama_api("api/tags")?;
-    //     let parsed_response = Self::parse_models_response(&response)?;
-    //     Ok(parsed_response)
-    // }
+    #[allow(dead_code)]
+    pub fn list_local_models(&self) -> Result<OllamaApiModelsMetadata, OllamaError> {
+        let response = self.get_from_ollama_api("api/tags")?;
+        let parsed_response = Self::parse_models_response(&response)?;
+        Ok(parsed_response)
+    }
 
     fn parse_models_response(response: &str) -> Result<OllamaApiModelsMetadata, OllamaError> {
         let models: OllamaApiModelsMetadata =
@@ -205,7 +174,7 @@ impl<'a> Llm for Ollama<'a> {
         let body = OllamaGenerateRequest {
             model: self
                 .model()
-                .map_err(|e| LlmError::Configuration("Model not set".to_string()))?,
+                .map_err(|_e| LlmError::Configuration("Model not set".to_string()))?,
             prompt: prompt.to_string(),
             stream: Some(false),
             format: Some("json".to_string()),
@@ -219,7 +188,7 @@ impl<'a> Llm for Ollama<'a> {
         let url = format!(
             "{}/api/generate",
             self.base_url()
-                .map_err(|e| LlmError::Configuration("Base URL not set".to_string()))?
+                .map_err(|_e| LlmError::Configuration("Base URL not set".to_string()))?
         );
         let response = client
             .post(url)
@@ -263,8 +232,29 @@ impl<'a> Llm for Ollama<'a> {
         Ok(response)
     }
 
-    fn generate_embedding(&self, prompt: &str) -> Result<Vec<f32>, crate::llm::error::LlmError> {
-        todo!()
+    #[allow(unused)]
+    fn generate_embedding(&self, prompt: &str) -> Result<Vec<f32>, LlmError> {
+        let client = reqwest::blocking::Client::new();
+        let url = format!("{}/api/embeddings", self.base_url()?);
+        let body = OllamaEmbeddingsRequest {
+            model: self.embedding_model()?,
+            prompt: prompt.to_string(),
+        };
+        let response = client
+            .post(url)
+            .body(
+                serde_json::to_string(&body)
+                    .map_err(|e| OllamaError::Serialization(e.to_string()))?,
+            )
+            .send()
+            .map_err(|e| OllamaError::ApiUnavailable(e.to_string()))?;
+        let body = response
+            .text()
+            .map_err(|e| OllamaError::Api(e.to_string()))?;
+        let response: OllamaEmbeddingsResponse =
+            serde_json::from_str(&body).map_err(|e| OllamaError::Parsing(e.to_string()))?;
+
+        Ok(response.embedding)
     }
 
     fn provider(&self) -> LlmProvider {
