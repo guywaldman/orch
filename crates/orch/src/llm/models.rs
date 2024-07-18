@@ -2,7 +2,7 @@
 
 use dyn_clone::DynClone;
 use serde::{Deserialize, Serialize};
-use std::pin::Pin;
+use std::{future::Future, pin::Pin};
 use tokio_stream::Stream;
 
 use super::error::LlmError;
@@ -35,7 +35,7 @@ pub trait Llm: DynClone {
         prompt: &str,
         system_prompt: &str,
         options: TextCompleteOptions,
-    ) -> Result<TextCompleteResponse, LlmError>;
+    ) -> impl std::future::Future<Output = Result<TextCompleteResponse, LlmError>> + Send;
 
     /// Generates a streaming response from the LLM.
     ///
@@ -89,7 +89,8 @@ pub struct TextCompleteStreamOptions {
 #[derive(Debug, Clone)]
 pub struct TextCompleteResponse {
     pub text: String,
-    pub context: Vec<i64>,
+    // TODO: This is specific to Ollama, context looks differently for other LLM providers.
+    pub context: Option<Vec<i64>>,
 }
 
 pub struct TextCompleteStreamResponse {

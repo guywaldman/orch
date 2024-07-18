@@ -1,6 +1,7 @@
 mod error;
-mod models;
 mod llm_provider;
+mod models;
 
-pub use models::*;
+pub use error::*;
 pub use llm_provider::*;
+pub use models::*;

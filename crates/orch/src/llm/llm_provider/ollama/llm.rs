@@ -1,3 +1,5 @@
+use std::future::Future;
+
 use thiserror::Error;
 
 use crate::{
@@ -165,26 +167,22 @@ impl<'a> Ollama<'a> {
 }
 
 impl<'a> Llm for Ollama<'a> {
-    fn text_complete(
+    async fn text_complete(
         &self,
         prompt: &str,
         system_prompt: &str,
-        options: TextCompleteOptions,
+        _options: TextCompleteOptions,
     ) -> Result<TextCompleteResponse, LlmError> {
         let body = OllamaGenerateRequest {
             model: self
                 .model()
                 .map_err(|_e| LlmError::Configuration("Model not set".to_string()))?,
             prompt: prompt.to_string(),
-            stream: Some(false),
-            format: Some("json".to_string()),
-            images: None,
             system: Some(system_prompt.to_string()),
-            keep_alive: Some("5m".to_string()),
-            context: options.context,
+            ..Default::default()
         };
 
-        let client = reqwest::blocking::Client::new();
+        let client = reqwest::Client::new();
         let url = format!(
             "{}/api/generate",
             self.base_url()
@@ -194,9 +192,11 @@ impl<'a> Llm for Ollama<'a> {
             .post(url)
             .body(serde_json::to_string(&body).unwrap())
             .send()
+            .await
             .map_err(|e| LlmError::Ollama(OllamaError::ApiUnavailable(e.to_string())))?;
         let body = response
             .text()
+            .await
             .map_err(|e| LlmError::Ollama(OllamaError::Api(e.to_string())))?;
         let ollama_response: OllamaGenerateResponse = serde_json::from_str(&body)
             .map_err(|e| LlmError::Ollama(OllamaError::Parsing(e.to_string())))?;
@@ -271,89 +271,3 @@ impl<'a> Llm for Ollama<'a> {
             .to_string()
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::*;
-
-//     use httpmock::{
-//         Method::{GET, POST},
-//         MockServer,
-//     };
-
-//     #[test]
-//     fn test_list_models() {
-//         let mock_list_models_response = OllamaApiModelsMetadata {
-//             models: vec![OllamaApiModelMetadata {
-//                 name: "mockstral:latest".to_string(),
-//                 model: "mockstral:latest".to_string(),
-//                 size: 12569170041,
-//                 digest: "fcc0019dcee9947fe4298e23825eae643f4670e391f205f8c55a64c2068e9a22"
-//                     .to_string(),
-//                 expires_at: None,
-//                 details: OllamaApiModelDetails {
-//                     parent_model: "".to_string(),
-//                     format: "gguf".to_string(),
-//                     parameter_size: "7.2B".to_string(),
-//                     quantization_level: "Q4_0".to_string(),
-//                     family: "ollama".to_string(),
-//                 },
-//             }],
-//         };
-
-//         let mock_server = MockServer::start();
-//         let mock_list_models_api = mock_server.mock(|when, then| {
-//             when.method(GET).path("/api/ps");
-//             then.status(200)
-//                 .header("Content-Type", "application/json")
-//                 .body(serde_json::to_string(&mock_list_models_response).unwrap());
-//         });
-
-//         let base_url = mock_server.base_url();
-//         let ollama = OllamaBuilder::new()
-//             .with_base_url(&base_url)
-//             .with_model(ollama_model::CODESTRAL)
-//             .with_embeddings_model(ollama_embedding_model::NOMIC_EMBED_TEXT)
-//             .build();
-//         let running_models = ollama.list_running_models();
-//         mock_list_models_api.assert();
-//         assert!(running_models.is_ok());
-//         let running_models = running_models.unwrap();
-//         assert!(running_models.models.len() == 1);
-//         let model = running_models.models.first().unwrap();
-//         assert_eq!(
-//             model.name,
-//             mock_list_models_response.models.first().unwrap().name
-//         );
-//     }
-
-//     #[test]
-//     fn test_generate() {
-//         let mock_server = MockServer::start();
-//         let mock_generated_response = OllamaGenerateResponse {
-//             model: "mockstral:latest".to_string(),
-//             created_at: "2024-06-25T01:40:42.192756+00:00".to_string(),
-//             response: "Mock response".to_string(),
-//             total_duration: 12345,
-//             context: vec![1, 2, 3],
-//         };
-//         let mock_generation_api = mock_server.mock(|when, then| {
-//             when.method(POST).path("/api/generate");
-//             then.status(200)
-//                 .header("Content-Type", "application/json")
-//                 .body(serde_json::to_string(&mock_generated_response).unwrap());
-//         });
-
-//         let base_url = mock_server.base_url();
-//         let ollama = OllamaBuilder::new()
-//             .with_base_url(&base_url)
-//             .with_model(ollama_model::CODESTRAL)
-//             .with_embeddings_model(ollama_embedding_model::NOMIC_EMBED_TEXT)
-//             .build();
-
-//         let generation_response = ollama.generate("Mock prompt", "Mock system prompt");
-//         mock_generation_api.assert();
-//         assert!(generation_response.is_ok());
-//     }
-// }

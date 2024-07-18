@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::ollama_model;
+
 /// Response from the Ollama API for obtaining information about local models.
 /// Referenced from the Ollama API documentation [here](https://github.com/ollama/ollama/blob/fedf71635ec77644f8477a86c6155217d9213a11/docs/api.md#list-running-models).
 #[derive(Debug, Serialize, Deserialize)]
@@ -58,7 +60,7 @@ pub struct OllamaApiModelDetails {
 ///
 /// Referenced from the Ollama API documentation [here](https://github.com/ollama/ollama/blob/fedf71635ec77644f8477a86c6155217d9213a11/docs/api.md#generate-a-completion).
 #[allow(dead_code)]
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct OllamaGenerateRequest {
     /// Model identifier (e.g., "mistral:latest")
     pub model: String,
@@ -86,6 +88,21 @@ pub struct OllamaGenerateRequest {
     pub keep_alive: Option<String>,
 }
 
+impl Default for OllamaGenerateRequest {
+    fn default() -> Self {
+        Self {
+            model: ollama_model::CODESTRAL.to_string(),
+            prompt: "".to_string(),
+            stream: Some(false),
+            format: None,
+            images: None,
+            system: Some("You are a helpful assistant".to_string()),
+            keep_alive: Some("5m".to_string()),
+            context: None,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct OllamaGenerateResponse {
@@ -99,7 +116,7 @@ pub struct OllamaGenerateResponse {
     pub response: String,
 
     /// The encoding of the conversation used in this response, this can be sent in the next request to keep a conversational memory
-    pub context: Vec<i64>,
+    pub context: Option<Vec<i64>>,
 
     /// The duration of the response in nanoseconds
     pub total_duration: usize,

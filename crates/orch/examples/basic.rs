@@ -1,19 +1,26 @@
-use orch::{Llm, OllamaBuilder, TextCompleteStreamOptions};
-use tokio_stream::StreamExt;
+use orch::{Executor, OllamaBuilder};
 
 #[tokio::main]
 async fn main() {
-    let ollama = OllamaBuilder::new().build();
-    let text_completion = ollama
-        .text_complete_stream(
-            "How are you?",
-            "You are a helpful assistant",
-            TextCompleteStreamOptions::default(),
-        )
-        .unwrap();
+    let prompt = "What is 2+2?";
+    let system_prompt = "You are a helpful assistant";
 
-    let mut stream = text_completion.stream;
-    while let Some(chunk) = stream.next().await {
-        println!("{chunk}");
-    }
+    println!("Prompt: {prompt}");
+    println!("System prompt: {system_prompt}");
+    println!("---");
+
+    let ollama = OllamaBuilder::new().build();
+    let executor = Executor::new(&ollama);
+    let response = executor
+        .text_complete(prompt, system_prompt)
+        .await
+        .expect("Execution failed");
+
+    println!("Response:");
+    println!("{}", response.text);
+
+    // let mut stream = text_completion.stream;
+    // while let Some(chunk) = stream.next().await {
+    //     println!("{chunk}");
+    // }
 }
