@@ -17,6 +17,5 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-
-			- name: Publish to crates.io
-				run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
