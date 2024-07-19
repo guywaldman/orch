@@ -7,8 +7,10 @@ It was primarily built for usage in [magic-cli](https://github.com/guywaldman/ma
 >
 > If the project gains traction, this can be compiled as an addon to other languages such as Python or a standalone WebAssembly module.
 
-There is currently support for text generation with `ollama` (either stream or non-stream).  
+There is currently support for text generation with `ollama` (either stream or non-stream) and embedding generation.  
 Originally this contained agents and tools as well, but this was removed for now.
+
+See [/examples](examples) for usage examples.
 
 ## Roadmap
 

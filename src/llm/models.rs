@@ -53,7 +53,7 @@ pub trait Llm: DynClone {
         prompt: &str,
         system_prompt: &str,
         options: TextCompleteStreamOptions,
-    ) -> Result<TextCompleteStreamResponse, LlmError>;
+    ) -> impl std::future::Future<Output = Result<TextCompleteStreamResponse, LlmError>> + Send;
 
     /// Generates an embedding from the LLM.
     ///
@@ -63,7 +63,10 @@ pub trait Llm: DynClone {
     /// # Returns
     ///
     /// A [Result] containing the embedding or an error if there was a problem.
-    fn generate_embedding(&self, prompt: &str) -> Result<Vec<f32>, LlmError>;
+    fn generate_embedding(
+        &self,
+        prompt: &str,
+    ) -> impl std::future::Future<Output = Result<Vec<f32>, LlmError>> + Send;
 
     /// Returns the provider of the LLM.
     fn provider(&self) -> LlmProvider;

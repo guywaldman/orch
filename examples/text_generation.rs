@@ -1,6 +1,6 @@
 //! This example demonstrates how to use the `Executor` to generate a response from the LLM.
 //! We construct an `Ollama` instance and use it to generate a response.
-//!
+
 use orch::{Executor, OllamaBuilder};
 
 #[tokio::main]

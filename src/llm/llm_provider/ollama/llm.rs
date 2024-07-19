@@ -198,7 +198,7 @@ impl<'a> Llm for Ollama<'a> {
         Ok(response)
     }
 
-    fn text_complete_stream(
+    async fn text_complete_stream(
         &self,
         prompt: &str,
         system_prompt: &str,
@@ -230,9 +230,8 @@ impl<'a> Llm for Ollama<'a> {
         Ok(response)
     }
 
-    #[allow(unused)]
-    fn generate_embedding(&self, prompt: &str) -> Result<Vec<f32>, LlmError> {
-        let client = reqwest::blocking::Client::new();
+    async fn generate_embedding(&self, prompt: &str) -> Result<Vec<f32>, LlmError> {
+        let client = reqwest::Client::new();
         let url = format!("{}/api/embeddings", self.base_url()?);
         let body = OllamaEmbeddingsRequest {
             model: self.embedding_model()?,
@@ -245,9 +244,11 @@ impl<'a> Llm for Ollama<'a> {
                     .map_err(|e| OllamaError::Serialization(e.to_string()))?,
             )
             .send()
+            .await
             .map_err(|e| OllamaError::ApiUnavailable(e.to_string()))?;
         let body = response
             .text()
+            .await
             .map_err(|e| OllamaError::Api(e.to_string()))?;
         let response: OllamaEmbeddingsResponse =
             serde_json::from_str(&body).map_err(|e| OllamaError::Parsing(e.to_string()))?;

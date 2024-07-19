@@ -70,11 +70,29 @@ impl<'a, L: Llm> Executor<'a, L> {
         let response = self
             .llm
             .text_complete_stream(prompt, system_prompt, options)
+            .await
             .map_err(ExecutorError::Llm)?;
         Ok(ExecutorTextCompleteStreamResponse {
             stream: response.stream,
             context: ExecutorContext {},
         })
+    }
+
+    /// Generates an embedding from the LLM.
+    ///
+    /// # Arguments
+    /// * `prompt` - The item to generate an embedding for.
+    ///
+    /// # Returns
+    ///
+    /// A [Result] containing the embedding or an error if there was a problem.
+    pub async fn generate_embedding(&self, prompt: &str) -> Result<Vec<f32>, ExecutorError> {
+        let response = self
+            .llm
+            .generate_embedding(prompt)
+            .await
+            .map_err(ExecutorError::Llm)?;
+        Ok(response)
     }
 }
 
