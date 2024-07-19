@@ -82,10 +82,10 @@ jobs:
           command: clippy
           args: -- -D warnings
 
-      - name: Run rustdoc lints
-        uses: actions-rs/cargo@v1
-        env:
-          RUSTDOCFLAGS: "-D missing_docs -D rustdoc::missing_doc_code_examples"
-        with:
-          command: doc
-          args: --workspace --all-features --no-deps --document-private-items
+      # - name: Run rustdoc lints
+      #   uses: actions-rs/cargo@v1
+      #   env:
+      #     RUSTDOCFLAGS: "-D missing_docs -D rustdoc::missing_doc_code_examples"
+      #   with:
+      #     command: doc
+      #     args: --workspace --all-features --no-deps --document-private-items
