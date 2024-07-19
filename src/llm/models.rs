@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
+use std::pin::Pin;
+
 use dyn_clone::DynClone;
 use serde::{Deserialize, Serialize};
-use std::{future::Future, pin::Pin};
 use tokio_stream::Stream;
 
 use super::error::LlmError;
@@ -94,7 +95,7 @@ pub struct TextCompleteResponse {
 }
 
 pub struct TextCompleteStreamResponse {
-    pub stream: Pin<Box<dyn Stream<Item = String> + Send>>,
+    pub stream: Pin<Box<dyn Stream<Item = Result<String, LlmError>> + Send>>,
     // TODO: Handle context with streaming response.
     // pub context: Vec<i64>,
 }

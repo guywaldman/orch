@@ -1,3 +1,6 @@
+//! This example demonstrates how to use the `Executor` to generate a response from the LLM.
+//! We construct an `Ollama` instance and use it to generate a response.
+//!
 use orch::{Executor, OllamaBuilder};
 
 #[tokio::main]
@@ -18,9 +21,4 @@ async fn main() {
 
     println!("Response:");
     println!("{}", response.text);
-
-    // let mut stream = text_completion.stream;
-    // while let Some(chunk) = stream.next().await {
-    //     println!("{chunk}");
-    // }
 }

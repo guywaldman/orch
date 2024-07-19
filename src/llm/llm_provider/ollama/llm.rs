@@ -1,16 +1,7 @@
-use std::future::Future;
-
 use thiserror::Error;
+use tokio_stream::StreamExt;
 
-use crate::{
-    llm::{
-        error::LlmError,
-        models::{Llm, LlmProvider},
-    },
-    OllamaApiModelsMetadata, OllamaEmbeddingsRequest, OllamaEmbeddingsResponse,
-    OllamaGenerateRequest, OllamaGenerateResponse, SseClient, TextCompleteOptions,
-    TextCompleteResponse, TextCompleteStreamOptions, TextCompleteStreamResponse,
-};
+use crate::*;
 
 pub mod ollama_model {
     pub const CODESTRAL: &str = "codestral:latest";
@@ -226,6 +217,13 @@ impl<'a> Llm for Ollama<'a> {
 
         let url = format!("{}/api/generate", self.base_url()?);
         let stream = SseClient::post(&url, Some(serde_json::to_string(&body).unwrap()));
+        let stream = stream.map(|event| {
+            let parsed_message = serde_json::from_str::<OllamaGenerateStreamItemResponse>(&event);
+            match parsed_message {
+                Ok(message) => Ok(message.response),
+                Err(e) => Err(LlmError::Ollama(OllamaError::Parsing(e.to_string()))),
+            }
+        });
         let response = TextCompleteStreamResponse {
             stream: Box::pin(stream),
         };

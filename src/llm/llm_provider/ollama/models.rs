@@ -122,6 +122,18 @@ pub struct OllamaGenerateResponse {
     pub total_duration: usize,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OllamaGenerateStreamItemResponse {
+    /// Model identifier (e.g., "mistral:latest")
+    pub model: String,
+
+    /// Time at which the response was generated (ISO 8601 format)
+    pub created_at: String,
+
+    /// The response to the prompt
+    pub response: String,
+}
+
 /// Request for generating an embedding from the Ollama API.
 /// Referenced from the Ollama API documentation [here](https://github.com/ollama/ollama/blob/fedf71635ec77644f8477a86c6155217d9213a11/docs/api.md#generate-embeddings).
 ///
