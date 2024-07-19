@@ -2,6 +2,11 @@
 name = "orch"
 version = "0.0.1"
 edition = "2021"
+license = "MIT"
+description = "LLM orchestration library"
+homepage = "https://github.com/guywaldman/orch"
+repository = "https://github.com/guywaldman/orch"
+keywords = ["llm", "openai", "ollama", "rust"]
 
 [dependencies]
 async-gen = "0.2.3"
