@@ -18,4 +18,4 @@ jobs:
           toolchain: stable
           override: true
       - name: Publish to crates.io
-        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish --token ${{ secrets.CRATES_IO_API_TOKEN }}
