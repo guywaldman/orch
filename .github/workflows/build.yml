@@ -1,8 +1,9 @@
 name: Build
 on:
   pull_request:
+    branches: [main]
   push:
-    branches: [develop, main]
+    branches: [develop]
 
 jobs:
   check:
