@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "core"
+		},
+		{
+			"path": "response"
+		},
+		{
+			"path": "response_derive"
+		}
+	],
+	"settings": {}
+}

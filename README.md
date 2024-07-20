@@ -1,6 +1,6 @@
 # orch
 
-Orch (stands for "orchestrator") is a library for building LLM-powered applications and agents for the Rust programming language.  
+Orch (stands for "orchestrator") is a library for building language model-powered applications and agents for the Rust programming language.  
 It was primarily built for usage in [magic-cli](https://github.com/guywaldman/magic-cli), but can be used in other contexts as well.
 
 > [!NOTE]

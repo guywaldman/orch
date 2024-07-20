@@ -1,7 +1,8 @@
-//! This example demonstrates how to use the `Executor` to generate embeddings from the LLM.
+//! This example demonstrates how to use the `Executor` to generate embeddings from the language model.
 //! We construct an `Ollama` instance and use it to generate embeddings.
 //!
-use orch::{Executor, OllamaBuilder};
+
+use orch::{execution::TextExecutorBuilder, lm::OllamaBuilder};
 
 #[tokio::main]
 async fn main() {
@@ -11,7 +12,10 @@ async fn main() {
     println!("---");
 
     let ollama = OllamaBuilder::new().build();
-    let executor = Executor::new(&ollama);
+    let executor = TextExecutorBuilder::new()
+        .with_lm(&ollama)
+        .try_build()
+        .unwrap();
     let embedding = executor
         .generate_embedding(text)
         .await

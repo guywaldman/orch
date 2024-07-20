@@ -1,6 +1,6 @@
 mod config;
-mod llm;
+mod lm;
 mod models;
 
-pub use llm::*;
+pub use lm::*;
 pub use models::*;

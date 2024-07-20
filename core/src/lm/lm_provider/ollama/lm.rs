@@ -1,7 +1,21 @@
+use lm::{
+    error::LanguageModelError,
+    models::{
+        TextCompleteOptions, TextCompleteResponse, TextCompleteStreamOptions,
+        TextCompleteStreamResponse,
+    },
+    LanguageModel, LanguageModelProvider,
+};
+use net::SseClient;
 use thiserror::Error;
 use tokio_stream::StreamExt;
 
 use crate::*;
+
+use super::{
+    OllamaApiModelsMetadata, OllamaEmbeddingsRequest, OllamaEmbeddingsResponse,
+    OllamaGenerateRequest, OllamaGenerateResponse, OllamaGenerateStreamItemResponse,
+};
 
 pub mod ollama_model {
     pub const CODESTRAL: &str = "codestral:latest";
@@ -157,17 +171,17 @@ impl<'a> Ollama<'a> {
     }
 }
 
-impl<'a> Llm for Ollama<'a> {
+impl<'a> LanguageModel for Ollama<'a> {
     async fn text_complete(
         &self,
         prompt: &str,
         system_prompt: &str,
         _options: TextCompleteOptions,
-    ) -> Result<TextCompleteResponse, LlmError> {
+    ) -> Result<TextCompleteResponse, LanguageModelError> {
         let body = OllamaGenerateRequest {
             model: self
                 .model()
-                .map_err(|_e| LlmError::Configuration("Model not set".to_string()))?,
+                .map_err(|_e| LanguageModelError::Configuration("Model not set".to_string()))?,
             prompt: prompt.to_string(),
             system: Some(system_prompt.to_string()),
             ..Default::default()
@@ -177,20 +191,20 @@ impl<'a> Llm for Ollama<'a> {
         let url = format!(
             "{}/api/generate",
             self.base_url()
-                .map_err(|_e| LlmError::Configuration("Base URL not set".to_string()))?
+                .map_err(|_e| LanguageModelError::Configuration("Base URL not set".to_string()))?
         );
         let response = client
             .post(url)
             .body(serde_json::to_string(&body).unwrap())
             .send()
             .await
-            .map_err(|e| LlmError::Ollama(OllamaError::ApiUnavailable(e.to_string())))?;
+            .map_err(|e| LanguageModelError::Ollama(OllamaError::ApiUnavailable(e.to_string())))?;
         let body = response
             .text()
             .await
-            .map_err(|e| LlmError::Ollama(OllamaError::Api(e.to_string())))?;
+            .map_err(|e| LanguageModelError::Ollama(OllamaError::Api(e.to_string())))?;
         let ollama_response: OllamaGenerateResponse = serde_json::from_str(&body)
-            .map_err(|e| LlmError::Ollama(OllamaError::Parsing(e.to_string())))?;
+            .map_err(|e| LanguageModelError::Ollama(OllamaError::Parsing(e.to_string())))?;
         let response = TextCompleteResponse {
             text: ollama_response.response,
             context: ollama_response.context,
@@ -203,7 +217,7 @@ impl<'a> Llm for Ollama<'a> {
         prompt: &str,
         system_prompt: &str,
         options: TextCompleteStreamOptions,
-    ) -> Result<TextCompleteStreamResponse, LlmError> {
+    ) -> Result<TextCompleteStreamResponse, LanguageModelError> {
         let body = OllamaGenerateRequest {
             model: self.model()?,
             prompt: prompt.to_string(),
@@ -221,7 +235,9 @@ impl<'a> Llm for Ollama<'a> {
             let parsed_message = serde_json::from_str::<OllamaGenerateStreamItemResponse>(&event);
             match parsed_message {
                 Ok(message) => Ok(message.response),
-                Err(e) => Err(LlmError::Ollama(OllamaError::Parsing(e.to_string()))),
+                Err(e) => Err(LanguageModelError::Ollama(OllamaError::Parsing(
+                    e.to_string(),
+                ))),
             }
         });
         let response = TextCompleteStreamResponse {
@@ -230,7 +246,7 @@ impl<'a> Llm for Ollama<'a> {
         Ok(response)
     }
 
-    async fn generate_embedding(&self, prompt: &str) -> Result<Vec<f32>, LlmError> {
+    async fn generate_embedding(&self, prompt: &str) -> Result<Vec<f32>, LanguageModelError> {
         let client = reqwest::Client::new();
         let url = format!("{}/api/embeddings", self.base_url()?);
         let body = OllamaEmbeddingsRequest {
@@ -256,8 +272,8 @@ impl<'a> Llm for Ollama<'a> {
         Ok(response.embedding)
     }
 
-    fn provider(&self) -> LlmProvider {
-        LlmProvider::Ollama
+    fn provider(&self) -> LanguageModelProvider {
+        LanguageModelProvider::Ollama
     }
 
     fn text_completion_model_name(&self) -> String {

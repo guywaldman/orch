@@ -3,24 +3,15 @@
 use std::pin::Pin;
 
 use dyn_clone::DynClone;
-use serde::{Deserialize, Serialize};
 use tokio_stream::Stream;
 
-use super::error::LlmError;
+use super::{error::LanguageModelError, LanguageModelProvider};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum LlmProvider {
-    #[serde(rename = "ollama")]
-    Ollama,
-    #[serde(rename = "openai")]
-    OpenAi,
-}
-
-/// A trait for LLM providers which implements text completion, embeddings, etc.
+/// A trait for language model providers which implements text completion, embeddings, etc.
 ///
 /// > `DynClone` is used so that there can be dynamic dispatch of the `Llm` trait,
 /// > especially needed for [magic-cli](https://github.com/guywaldman/magic-cli).
-pub trait Llm: DynClone {
+pub trait LanguageModel: DynClone + Clone {
     /// Generates a response from the LLM.
     ///
     /// # Arguments
@@ -36,7 +27,7 @@ pub trait Llm: DynClone {
         prompt: &str,
         system_prompt: &str,
         options: TextCompleteOptions,
-    ) -> impl std::future::Future<Output = Result<TextCompleteResponse, LlmError>> + Send;
+    ) -> impl std::future::Future<Output = Result<TextCompleteResponse, LanguageModelError>> + Send;
 
     /// Generates a streaming response from the LLM.
     ///
@@ -53,7 +44,7 @@ pub trait Llm: DynClone {
         prompt: &str,
         system_prompt: &str,
         options: TextCompleteStreamOptions,
-    ) -> impl std::future::Future<Output = Result<TextCompleteStreamResponse, LlmError>> + Send;
+    ) -> impl std::future::Future<Output = Result<TextCompleteStreamResponse, LanguageModelError>> + Send;
 
     /// Generates an embedding from the LLM.
     ///
@@ -66,10 +57,10 @@ pub trait Llm: DynClone {
     fn generate_embedding(
         &self,
         prompt: &str,
-    ) -> impl std::future::Future<Output = Result<Vec<f32>, LlmError>> + Send;
+    ) -> impl std::future::Future<Output = Result<Vec<f32>, LanguageModelError>> + Send;
 
     /// Returns the provider of the LLM.
-    fn provider(&self) -> LlmProvider;
+    fn provider(&self) -> LanguageModelProvider;
 
     /// Returns the name of the model used for text completions.
     fn text_completion_model_name(&self) -> String;
@@ -98,23 +89,7 @@ pub struct TextCompleteResponse {
 }
 
 pub struct TextCompleteStreamResponse {
-    pub stream: Pin<Box<dyn Stream<Item = Result<String, LlmError>> + Send>>,
+    pub stream: Pin<Box<dyn Stream<Item = Result<String, LanguageModelError>> + Send>>,
     // TODO: Handle context with streaming response.
     // pub context: Vec<i64>,
-}
-
-#[derive(Debug)]
-pub(crate) struct SystemPromptResponseOption {
-    pub scenario: String,
-    pub type_name: String,
-    pub response: String,
-    pub schema: Vec<SystemPromptCommandSchemaField>,
-}
-
-#[derive(Debug)]
-pub(crate) struct SystemPromptCommandSchemaField {
-    pub name: String,
-    pub description: String,
-    pub typ: String,
-    pub example: String,
 }

@@ -1,7 +1,10 @@
 //! This example demonstrates how to use the `Executor` to generate a response from the LLM.
 //! We construct an `Ollama` instance and use it to generate a response.
 
-use orch::{Executor, OllamaBuilder};
+use orch::{
+    execution::{StructuredExecutorBuilder, TextExecutorBuilder},
+    lm::OllamaBuilder,
+};
 
 #[tokio::main]
 async fn main() {
@@ -13,12 +16,12 @@ async fn main() {
     println!("---");
 
     let ollama = OllamaBuilder::new().build();
-    let executor = Executor::new(&ollama);
-    let response = executor
-        .text_complete(prompt, system_prompt)
-        .await
-        .expect("Execution failed");
+    let executor = TextExecutorBuilder::new()
+        .with_lm(&ollama)
+        .try_build()
+        .unwrap();
+    let response = executor.execute(prompt).await.expect("Execution failed");
 
     println!("Response:");
-    println!("{}", response.text);
+    println!("{}", response.content);
 }

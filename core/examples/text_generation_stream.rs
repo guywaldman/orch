@@ -1,7 +1,7 @@
 //! This example demonstrates how to use the `Executor` to generate a streaming response from the LLM.
 //! We construct an `Ollama` instance and use it to generate a streaming response.
 
-use orch::{Executor, OllamaBuilder};
+use orch::{execution::TextExecutorBuilder, lm::OllamaBuilder};
 use tokio_stream::StreamExt;
 
 #[tokio::main]
@@ -14,9 +14,12 @@ async fn main() {
     println!("---");
 
     let ollama = OllamaBuilder::new().build();
-    let executor = Executor::new(&ollama);
+    let executor = TextExecutorBuilder::new()
+        .with_lm(&ollama)
+        .try_build()
+        .unwrap();
     let mut response = executor
-        .text_complete_stream(prompt, system_prompt)
+        .execute_stream(prompt)
         .await
         .expect("Execution failed");
 

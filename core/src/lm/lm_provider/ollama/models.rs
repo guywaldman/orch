@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::ollama_model;
+use super::ollama_model;
 
 /// Response from the Ollama API for obtaining information about local models.
 /// Referenced from the Ollama API documentation [here](https://github.com/ollama/ollama/blob/fedf71635ec77644f8477a86c6155217d9213a11/docs/api.md#list-running-models).

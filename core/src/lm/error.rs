@@ -1,42 +1,42 @@
 use thiserror::Error;
 
-use crate::{LlmProvider, OllamaError};
+use super::{LanguageModelProvider, OllamaError};
 
 #[derive(Debug, Error)]
-pub enum LlmProviderError {
+pub enum LanguageModelProviderError {
     #[error("Invalid LLM provider: {0}")]
     InvalidValue(String),
 }
 
-impl std::fmt::Display for LlmProvider {
+impl std::fmt::Display for LanguageModelProvider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LlmProvider::Ollama => write!(f, "ollama"),
-            LlmProvider::OpenAi => write!(f, "openai"),
+            LanguageModelProvider::Ollama => write!(f, "ollama"),
+            LanguageModelProvider::OpenAi => write!(f, "openai"),
         }
     }
 }
 
-impl Default for LlmProvider {
+impl Default for LanguageModelProvider {
     fn default() -> Self {
         Self::Ollama
     }
 }
 
-impl TryFrom<&str> for LlmProvider {
-    type Error = LlmProviderError;
+impl TryFrom<&str> for LanguageModelProvider {
+    type Error = LanguageModelProviderError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
-            "ollama" => Ok(LlmProvider::Ollama),
-            "openai" => Ok(LlmProvider::OpenAi),
-            _ => Err(LlmProviderError::InvalidValue(value.to_string())),
+            "ollama" => Ok(LanguageModelProvider::Ollama),
+            "openai" => Ok(LanguageModelProvider::OpenAi),
+            _ => Err(LanguageModelProviderError::InvalidValue(value.to_string())),
         }
     }
 }
 
 #[derive(Debug, Error)]
-pub enum LlmError {
+pub enum LanguageModelError {
     #[error("Text generation error: {0}")]
     TextGeneration(String),
 
