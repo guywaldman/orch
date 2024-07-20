@@ -19,16 +19,22 @@ jobs:
       - run: |
           sudo apt-get update
           sudo apt install libxcb-xfixes0-dev
+      - name: Install ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+      - name: Run ollama
+        run: |
+          ollama serve &
+          ollama pull phi3:mini
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
-      - run: cargo test --all-features
-        name: unit tests
-      - run: cargo test --doc --all-features -- --show-output
-        name: doc tests
-      - run: cargo test --examples --all-features
-        name: examples
+      - name: Unit tests
+        run: cargo test --all-features
+      - name: Doc tests
+        run: cargo test --doc --all-features -- --show-output
+      - name: Examples
+        run: cargo test --examples --all-features
 
   formatting:
     name: cargo fmt
