@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::lm::LanguageModel;
 
-use super::{ResponseFormat, StructuredExecutor, TextExecutor};
+use super::{StructuredExecutor, TextExecutor};
 
 #[derive(Debug, Error)]
 pub enum ExecutorBuilderError {
@@ -13,7 +13,7 @@ pub enum ExecutorBuilderError {
 
 #[derive(Default)]
 pub struct TextExecutorBuilder<'a> {
-    lm: Option<Box<dyn LanguageModel>>,
+    lm: Option<&'a dyn LanguageModel>,
     preamble: Option<&'a str>,
 }
 
@@ -25,7 +25,7 @@ impl<'a> TextExecutorBuilder<'a> {
         }
     }
 
-    pub fn with_lm(mut self, lm: Box<dyn LanguageModel>) -> Self {
+    pub fn with_lm(mut self, lm: &'a dyn LanguageModel) -> Self {
         self.lm = Some(lm);
         self
     }
@@ -48,20 +48,18 @@ impl<'a> TextExecutorBuilder<'a> {
     }
 }
 
-pub struct StructuredExecutorBuilder<'a, L, T>
+#[derive(Default)]
+pub struct StructuredExecutorBuilder<'a, T>
 where
-    L: LanguageModel,
     T: serde::de::DeserializeOwned + Sized,
 {
-    lm: Option<&'a L>,
+    lm: Option<&'a dyn LanguageModel>,
     preamble: Option<&'a str>,
     options: Option<&'a dyn ResponseOptions<T>>,
-    format: ResponseFormat,
 }
 
-impl<'a, L, T> StructuredExecutorBuilder<'a, L, T>
+impl<'a, T> StructuredExecutorBuilder<'a, T>
 where
-    L: LanguageModel,
     T: serde::de::DeserializeOwned + Sized,
 {
     pub fn new() -> Self {
@@ -69,11 +67,10 @@ where
             lm: None,
             preamble: None,
             options: None,
-            format: ResponseFormat::Json,
         }
     }
 
-    pub fn with_lm(mut self, lm: &'a L) -> Self {
+    pub fn with_lm(mut self, lm: &'a dyn LanguageModel) -> Self {
         self.lm = Some(lm);
         self
     }
@@ -88,7 +85,7 @@ where
         self
     }
 
-    pub fn try_build(self) -> Result<StructuredExecutor<'a, L, T>, ExecutorBuilderError> {
+    pub fn try_build(self) -> Result<StructuredExecutor<'a, T>, ExecutorBuilderError> {
         let Some(lm) = self.lm else {
             return Err(ExecutorBuilderError::ConfigurationNotSet(
                 "Language model".to_string(),
@@ -103,7 +100,6 @@ where
             lm,
             preamble: self.preamble,
             response_options,
-            format: self.format,
         })
     }
 }

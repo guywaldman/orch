@@ -8,6 +8,10 @@
 		},
 		{
 			"path": "response_derive"
+		},
+		{
+			"path": ".",
+			"name": "(root)"
 		}
 	],
 	"settings": {}

@@ -1,10 +1,8 @@
 //! This example demonstrates how to use the `Executor` to generate a structured response from the LLM.
 
-use orch::{
-    execution::{ResponseFormat, StructuredExecutorBuilder},
-    lm::OllamaBuilder,
-};
-use orch_response_derive::{options, OrchResponseOptions};
+use orch::execution::*;
+use orch::lm::*;
+use orch_response_derive::*;
 
 #[derive(OrchResponseOptions)]
 pub enum CapitalCityExecutorResponseOptions {
@@ -17,7 +15,10 @@ pub enum CapitalCityExecutorResponseOptions {
         description = "Capital city of the received country",
         example = "London"
     )]
-    Answer { capital: String },
+    Answer {
+        #[allow(dead_code)]
+        capital: String,
+    },
     #[response(
         scenario = "You don't know the capital city of the country",
         description = "Reason why the capital city is not known"
@@ -27,21 +28,43 @@ pub enum CapitalCityExecutorResponseOptions {
         description = "Reason why the capital city is not known",
         example = "Country 'foobar' does not exist"
     )]
-    Fail { reason: String },
+    Fail {
+        #[allow(dead_code)]
+        reason: String,
+    },
 }
 
 #[tokio::main]
 async fn main() {
+    // ! Change this to use a different provider.
+    let provider = LanguageModelProvider::OpenAi;
+
     let prompt = "What is the capital of Fooland?";
-    let system_prompt = "You are a helpful assistant";
 
     println!("Prompt: {prompt}");
-    println!("System prompt: {system_prompt}");
     println!("---");
 
-    let ollama = OllamaBuilder::new().build();
+    // Use a different language model, per the `provider` variable (feel free to change it).
+    let open_ai_api_key = {
+        if provider == LanguageModelProvider::OpenAi {
+            std::env::var("OPENAI_API_KEY")
+                .unwrap_or_else(|_| panic!("OPENAI_API_KEY environment variable not set"))
+        } else {
+            String::new()
+        }
+    };
+    let lm: Box<dyn LanguageModel> = match provider {
+        LanguageModelProvider::Ollama => Box::new(OllamaBuilder::new().try_build().unwrap()),
+        LanguageModelProvider::OpenAi => Box::new(
+            OpenAiBuilder::new()
+                .with_api_key(&open_ai_api_key)
+                .try_build()
+                .unwrap(),
+        ),
+    };
+
     let executor = StructuredExecutorBuilder::new()
-        .with_lm(&ollama)
+        .with_lm(&*lm)
         .with_preamble("You are a geography expert who helps users understand the capital city of countries around the world.")
         .with_options(&options!(CapitalCityExecutorResponseOptions))
         .try_build()

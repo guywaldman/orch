@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use lm::{
     error::LanguageModelError,
     models::{
@@ -44,6 +45,7 @@ pub enum OpenAiError {
     ApiUnavailable(String),
 }
 
+#[async_trait]
 impl<'a> LanguageModel for OpenAi<'a> {
     async fn text_complete(
         &self,

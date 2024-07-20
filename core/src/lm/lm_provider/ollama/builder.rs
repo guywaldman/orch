@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::lm::{LanguageModelBuilder, LanguageModelBuilderError};
 
-use super::Ollama;
+use super::{ollama_embedding_model, ollama_model, Ollama};
 
 #[derive(Debug, Error)]
 pub enum OllamaBuilderError {
@@ -45,7 +45,11 @@ impl<'a> OllamaBuilder<'a> {
 
 impl<'a> LanguageModelBuilder<Ollama<'a>> for OllamaBuilder<'a> {
     fn new() -> Self {
-        Default::default()
+        Self {
+            base_url: Some("http://localhost:11434"),
+            model: Some(ollama_model::CODESTRAL),
+            embeddings_model: Some(ollama_embedding_model::NOMIC_EMBED_TEXT),
+        }
     }
 
     fn try_build(self) -> Result<Ollama<'a>, LanguageModelBuilderError> {

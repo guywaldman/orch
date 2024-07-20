@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use lm::{
     error::LanguageModelError,
     models::{
@@ -101,6 +102,7 @@ impl<'a> Ollama<'a> {
     }
 }
 
+#[async_trait]
 impl<'a> LanguageModel for Ollama<'a> {
     async fn text_complete(
         &self,

@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::lm::{LanguageModelBuilder, LanguageModelBuilderError};
 
-use super::{openai_embedding_model, OpenAi};
+use super::{openai_embedding_model, openai_model, OpenAi};
 
 #[derive(Debug, Error)]
 pub enum OpenAiBuilderError {
@@ -15,17 +15,6 @@ pub struct OpenAiBuilder<'a> {
     model: Option<&'a str>,
     embeddings_model: Option<&'a str>,
     embedding_dimensions: Option<usize>,
-}
-
-impl Default for OpenAiBuilder<'_> {
-    fn default() -> Self {
-        Self {
-            api_key: None,
-            model: None,
-            embeddings_model: None,
-            embedding_dimensions: None,
-        }
-    }
 }
 
 impl<'a> OpenAiBuilder<'a> {
@@ -62,7 +51,12 @@ impl<'a> OpenAiBuilder<'a> {
 
 impl<'a> LanguageModelBuilder<OpenAi<'a>> for OpenAiBuilder<'a> {
     fn new() -> Self {
-        Default::default()
+        Self {
+            api_key: None,
+            model: Some(openai_model::GPT_4O_MINI),
+            embeddings_model: Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002),
+            embedding_dimensions: Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002_DIMENSIONS),
+        }
     }
 
     fn try_build(self) -> Result<OpenAi<'a>, LanguageModelBuilderError> {

@@ -1,7 +1,4 @@
-use std::{
-    cell::{OnceCell, RefCell},
-    pin::Pin,
-};
+use std::{cell::OnceCell, pin::Pin};
 
 use orch_response::{ResponseOption, ResponseOptions, ResponseSchemaField};
 use thiserror::Error;
@@ -26,10 +23,7 @@ pub enum ExecutorError {
     Parsing(String),
 }
 
-trait Executor<'a, L>
-where
-    L: LanguageModel + 'a,
-{
+trait Executor<'a> {
     /// Generates a text completion from the LLM (non-streaming).
     async fn text_complete(
         &self,
@@ -62,23 +56,20 @@ where
         Some("You are a helpful assistant")
     }
 
-    fn lm(&self) -> &'a L;
+    fn lm(&self) -> &'a dyn LanguageModel;
 }
 
-pub struct TextExecutor<'a, L>
-where
-    L: LanguageModel,
-{
-    pub(crate) lm: &'a L,
+pub struct TextExecutor<'a> {
+    pub(crate) lm: &'a dyn LanguageModel,
     pub(crate) preamble: Option<&'a str>,
 }
 
-impl<'a, L: LanguageModel> Executor<'a, L> for TextExecutor<'a, L> {
+impl<'a> Executor<'a> for TextExecutor<'a> {
     fn format(&self) -> ResponseFormat {
         ResponseFormat::Text
     }
 
-    fn lm(&self) -> &'a L {
+    fn lm(&self) -> &'a dyn LanguageModel {
         self.lm
     }
 
@@ -90,10 +81,7 @@ impl<'a, L: LanguageModel> Executor<'a, L> for TextExecutor<'a, L> {
 /// Trait for LLM execution.
 /// This should be implemented for each LLM text generation use-case, where the system prompt
 /// changes according to the trait implementations.
-impl<'a, L> TextExecutor<'a, L>
-where
-    L: LanguageModel,
-{
+impl<'a> TextExecutor<'a> {
     /// Generates a streaming response from the LLM.
     ///
     /// # Arguments
@@ -149,20 +137,16 @@ where
     }
 }
 
-pub struct StructuredExecutor<'a, L, T>
+pub struct StructuredExecutor<'a, T>
 where
-    L: LanguageModel,
     T: serde::de::DeserializeOwned,
 {
-    pub(crate) lm: &'a L,
+    pub(crate) lm: &'a dyn LanguageModel,
     pub(crate) preamble: Option<&'a str>,
     pub(crate) response_options: &'a dyn ResponseOptions<T>,
-    pub(crate) format: ResponseFormat,
 }
 
-impl<'a, L: LanguageModel, T: serde::de::DeserializeOwned> Executor<'a, L>
-    for StructuredExecutor<'a, L, T>
-{
+impl<'a, T: serde::de::DeserializeOwned> Executor<'a> for StructuredExecutor<'a, T> {
     fn format(&self) -> ResponseFormat {
         ResponseFormat::Json
     }
@@ -171,7 +155,7 @@ impl<'a, L: LanguageModel, T: serde::de::DeserializeOwned> Executor<'a, L>
         Some(self.response_options.options())
     }
 
-    fn lm(&self) -> &'a L {
+    fn lm(&self) -> &'a dyn LanguageModel {
         self.lm
     }
 
@@ -183,9 +167,8 @@ impl<'a, L: LanguageModel, T: serde::de::DeserializeOwned> Executor<'a, L>
 /// Trait for LLM execution.
 /// This should be implemented for each LLM text generation use-case, where the system prompt
 /// changes according to the trait implementations.
-impl<'a, L, T> StructuredExecutor<'a, L, T>
+impl<'a, T> StructuredExecutor<'a, T>
 where
-    L: LanguageModel,
     T: serde::de::DeserializeOwned,
 {
     /// Generates a structured response from the LLM (non-streaming).
@@ -243,8 +226,8 @@ pub struct ExecutorTextCompleteStreamResponse {
     pub context: ExecutorContext,
 }
 
-pub async fn text_complete<L: LanguageModel>(
-    lm: &L,
+pub async fn text_complete<'a>(
+    lm: &'a dyn LanguageModel,
     prompt: &str,
     system_prompt: &str,
 ) -> Result<ExecutorTextCompleteResponse<String>, ExecutorError> {
@@ -261,8 +244,8 @@ pub async fn text_complete<L: LanguageModel>(
     })
 }
 
-pub async fn generate_embedding<L: LanguageModel>(
-    lm: &L,
+pub async fn generate_embedding<'a>(
+    lm: &'a dyn LanguageModel,
     prompt: &str,
 ) -> Result<Vec<f32>, ExecutorError> {
     let response = lm

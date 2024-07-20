@@ -1,74 +1,8 @@
-use std::option;
-
 use darling::FromMeta;
 use quote::quote;
-use syn::{parse_macro_input, spanned::Spanned, token::Final, DeriveInput};
+use syn::{parse_macro_input, spanned::Spanned, DeriveInput, PathArguments};
 
 use crate::attribute_impl::{ResponseAttribute, SchemaAttribute};
-
-/*
-// ORIGINAL:
-
-pub enum MyResponseOption {
-    #[response(type_name = "foo")]
-    Answer { capital: String },
-}
-
-#[derive(Debug, ::serde::Deserialize)]
-struct MyResponseOptionAnswer {
-    capital: String,
-}
-
-#[derive(Debug, ::serde::Deserialize)]
-struct MyResponseOptionFail {
-    reason: String,
-}
-
-impl ResponseOptions for MyResponseOption {
-    fn options() -> Vec<ResponseOption> {
-        vec![
-            ResponseOption::Answer {
-                response_type: "Answer".to_string(),
-                schema: vec![
-                    ResponseSchemaField {
-                        name: "capital".to_string(),
-                        description: "Capital city of the country".to_string(),
-                        example: "London".to_string(),
-                        typ: "string".to_string(),
-                    },
-                ],
-            },
-            ResponseOption::Fail {
-                response_type: "Fail".to_string(),
-                schema: vec![
-                    ResponseSchemaField {
-                        name: "reason".to_string(),
-                        description: "Reason why the capital city is not known".to_string(),
-                        example: "Country 'foobar' does not exist".to_string(),
-                        typ: "string".to_string(),
-                    },
-                ],
-            },
-        ]
-    }
-
-    fn parse(&self, response: String) -> Result<MyResponseOption, Box<dyn std::error::Error>> {
-        let parsed_dynamic = serde_json::from_str::<serde_json::Value>(&response);
-        let response_type = parsed_dynamic["response_type"].as_str().unwrap();
-        match response_type {
-            "Answer" => {
-                let parsed_answer = serde_json::from_str::<MyResponseOptionAnswer>(&response).unwrap();
-                Ok(MyResponseOption::Answer(parsed_answer))
-            }
-            "Fail" => {
-                let parsed_fail = serde_json::from_str::<MyResponseOptionFail>(&response).unwrap();
-                Ok(MyResponseOption::Fail(parsed_fail))
-            }
-            _ => Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, format!("Unknown type name: {}", response_type)))),
-        }
-    }
-}
-*/
 
 pub(crate) fn derive_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let mut output = quote!();
@@ -155,7 +89,7 @@ pub(crate) fn derive_impl(input: proc_macro::TokenStream) -> proc_macro::TokenSt
             } = schema_attr_for_field;
             let typ = ast_type_to_str(&variant_field.ty).unwrap_or_else(|_| {
                 panic!(
-                    "Failed to convert type to string for field {} of variant {}",
+                    "Failed to convert type to string for field `{}` of variant `{}`",
                     variant_field.ident.as_ref().unwrap(),
                     ident
                 )
@@ -208,7 +142,27 @@ fn ast_type_to_str(ty: &syn::Type) -> Result<String, String> {
             };
             let t = first_path_segment.ident.to_string();
             match t.as_ref() {
-                "String" => Ok("string".to_owned()),
+                "String" => {
+                    // SUPPORTED: String
+                    Ok("string".to_owned())
+                }
+                "Vec" => {
+                    let PathArguments::AngleBracketed(ab) = &tp.path.segments.first().unwrap().arguments else {
+                        return Err(format!("Unsupported/unexpected type: {:?}", ty).to_owned());
+                    };
+                    let syn::GenericArgument::Type(t) = ab.args.first().unwrap() else {
+                        return Err(format!("Unsupported/unexpected type: {:?}", ty).to_owned());
+                    };
+                    let syn::Type::Path(p) = t else {
+                        return Err(format!("Unsupported/unexpected type: {:?}", ty).to_owned());
+                    };
+                    let t = p.path.segments.first().unwrap().ident.to_string();
+                    match t.as_ref() {
+                        // SUPPORTED: Vec<String>
+                        "String" => Ok("string[]".to_owned()),
+                        _ => Err(format!("Unsupported/unexpected type: {}", t).to_owned()),
+                    }
+                }
                 _ => Err(format!("Unsupported/unexpected type: {}", t).to_owned()),
             }
         }
