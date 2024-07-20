@@ -16,16 +16,6 @@ pub struct OllamaBuilder<'a> {
     embeddings_model: Option<&'a str>,
 }
 
-impl Default for OllamaBuilder<'_> {
-    fn default() -> Self {
-        Self {
-            base_url: None,
-            model: None,
-            embeddings_model: None,
-        }
-    }
-}
-
 impl<'a> OllamaBuilder<'a> {
     pub fn with_base_url(mut self, base_url: &'a str) -> Self {
         self.base_url = Some(base_url);
