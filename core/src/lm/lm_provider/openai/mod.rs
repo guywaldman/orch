@@ -1,7 +1,7 @@
 mod builder;
-mod lm;
+mod llm;
 mod models;
 
 pub use builder::*;
-pub use lm::*;
+pub use llm::*;
 pub use models::*;

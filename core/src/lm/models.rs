@@ -11,7 +11,7 @@ use super::{error::LanguageModelError, LanguageModelProvider};
 ///
 /// > `DynClone` is used so that there can be dynamic dispatch of the `Llm` trait,
 /// > especially needed for [magic-cli](https://github.com/guywaldman/magic-cli).
-pub trait LanguageModel: DynClone + Clone {
+pub trait LanguageModel: DynClone {
     /// Generates a response from the LLM.
     ///
     /// # Arguments
@@ -22,12 +22,12 @@ pub trait LanguageModel: DynClone + Clone {
     /// # Returns
     /// A [Result] containing the response from the LLM or an error if there was a problem.
     ///
-    fn text_complete(
+    async fn text_complete(
         &self,
         prompt: &str,
         system_prompt: &str,
         options: TextCompleteOptions,
-    ) -> impl std::future::Future<Output = Result<TextCompleteResponse, LanguageModelError>> + Send;
+    ) -> Result<TextCompleteResponse, LanguageModelError>;
 
     /// Generates a streaming response from the LLM.
     ///
@@ -39,12 +39,12 @@ pub trait LanguageModel: DynClone + Clone {
     /// # Returns
     /// A [Result] containing the response from the LLM or an error if there was a problem.
     ///
-    fn text_complete_stream(
+    async fn text_complete_stream(
         &self,
         prompt: &str,
         system_prompt: &str,
         options: TextCompleteStreamOptions,
-    ) -> impl std::future::Future<Output = Result<TextCompleteStreamResponse, LanguageModelError>> + Send;
+    ) -> Result<TextCompleteStreamResponse, LanguageModelError>;
 
     /// Generates an embedding from the LLM.
     ///
@@ -54,10 +54,7 @@ pub trait LanguageModel: DynClone + Clone {
     /// # Returns
     ///
     /// A [Result] containing the embedding or an error if there was a problem.
-    fn generate_embedding(
-        &self,
-        prompt: &str,
-    ) -> impl std::future::Future<Output = Result<Vec<f32>, LanguageModelError>> + Send;
+    async fn generate_embedding(&self, prompt: &str) -> Result<Vec<f32>, LanguageModelError>;
 
     /// Returns the provider of the LLM.
     fn provider(&self) -> LanguageModelProvider;

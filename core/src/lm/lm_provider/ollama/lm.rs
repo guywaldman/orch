@@ -4,7 +4,7 @@ use lm::{
         TextCompleteOptions, TextCompleteResponse, TextCompleteStreamOptions,
         TextCompleteStreamResponse,
     },
-    LanguageModel, LanguageModelProvider,
+    ollama_embedding_model, ollama_model, LanguageModel, LanguageModelProvider,
 };
 use net::SseClient;
 use thiserror::Error;
@@ -17,73 +17,19 @@ use super::{
     OllamaGenerateRequest, OllamaGenerateResponse, OllamaGenerateStreamItemResponse,
 };
 
-pub mod ollama_model {
-    pub const CODESTRAL: &str = "codestral:latest";
-}
-
-pub mod ollama_embedding_model {
-    pub const NOMIC_EMBED_TEXT: &str = "nomic-embed-text:latest";
-}
-
 #[derive(Debug, Clone)]
 pub struct Ollama<'a> {
-    base_url: &'a str,
-    pub model: Option<&'a str>,
-    pub embeddings_model: Option<&'a str>,
+    pub base_url: &'a str,
+    pub model: &'a str,
+    pub embeddings_model: &'a str,
 }
 
 impl Default for Ollama<'_> {
     fn default() -> Self {
         Self {
             base_url: "http://localhost:11434",
-            model: Some(ollama_model::CODESTRAL),
-            embeddings_model: Some(ollama_embedding_model::NOMIC_EMBED_TEXT),
-        }
-    }
-}
-
-pub struct OllamaBuilder<'a> {
-    base_url: &'a str,
-    model: Option<&'a str>,
-    embeddings_model: Option<&'a str>,
-}
-
-impl Default for OllamaBuilder<'_> {
-    fn default() -> Self {
-        let ollama = Ollama::default();
-        Self {
-            base_url: ollama.base_url,
-            model: ollama.model,
-            embeddings_model: ollama.embeddings_model,
-        }
-    }
-}
-
-impl<'a> OllamaBuilder<'a> {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    pub fn with_base_url(mut self, base_url: &'a str) -> Self {
-        self.base_url = base_url;
-        self
-    }
-
-    pub fn with_model(mut self, model: &'a str) -> Self {
-        self.model = Some(model);
-        self
-    }
-
-    pub fn with_embeddings_model(mut self, embeddings_model: &'a str) -> Self {
-        self.embeddings_model = Some(embeddings_model);
-        self
-    }
-
-    pub fn build(self) -> Ollama<'a> {
-        Ollama {
-            base_url: self.base_url,
-            model: self.model,
-            embeddings_model: self.embeddings_model,
+            model: ollama_model::CODESTRAL,
+            embeddings_model: ollama_embedding_model::NOMIC_EMBED_TEXT,
         }
     }
 }
@@ -141,7 +87,7 @@ impl<'a> Ollama<'a> {
     }
 
     fn get_from_ollama_api(&self, url: &str) -> Result<String, OllamaError> {
-        let url = format!("{}/{}", self.base_url()?, url);
+        let url = format!("{}/{}", self.base_url, url);
 
         let client = reqwest::blocking::Client::new();
         let response = client
@@ -153,22 +99,6 @@ impl<'a> Ollama<'a> {
             .map_err(|e| OllamaError::Api(e.to_string()))?;
         Ok(response_text)
     }
-
-    fn base_url(&self) -> Result<String, OllamaError> {
-        Ok(self.base_url.to_string())
-    }
-
-    fn model(&self) -> Result<String, OllamaError> {
-        self.model
-            .map(|s| s.to_owned())
-            .ok_or_else(|| OllamaError::Configuration("Model not set".to_string()))
-    }
-
-    fn embedding_model(&self) -> Result<String, OllamaError> {
-        self.embeddings_model
-            .map(|s| s.to_owned())
-            .ok_or_else(|| OllamaError::Configuration("Embedding model not set".to_string()))
-    }
 }
 
 impl<'a> LanguageModel for Ollama<'a> {
@@ -179,20 +109,14 @@ impl<'a> LanguageModel for Ollama<'a> {
         _options: TextCompleteOptions,
     ) -> Result<TextCompleteResponse, LanguageModelError> {
         let body = OllamaGenerateRequest {
-            model: self
-                .model()
-                .map_err(|_e| LanguageModelError::Configuration("Model not set".to_string()))?,
+            model: self.model.to_owned(),
             prompt: prompt.to_string(),
             system: Some(system_prompt.to_string()),
             ..Default::default()
         };
 
         let client = reqwest::Client::new();
-        let url = format!(
-            "{}/api/generate",
-            self.base_url()
-                .map_err(|_e| LanguageModelError::Configuration("Base URL not set".to_string()))?
-        );
+        let url = format!("{}/api/generate", self.base_url);
         let response = client
             .post(url)
             .body(serde_json::to_string(&body).unwrap())
@@ -219,7 +143,7 @@ impl<'a> LanguageModel for Ollama<'a> {
         options: TextCompleteStreamOptions,
     ) -> Result<TextCompleteStreamResponse, LanguageModelError> {
         let body = OllamaGenerateRequest {
-            model: self.model()?,
+            model: self.model.to_owned(),
             prompt: prompt.to_string(),
             stream: Some(true),
             format: None,
@@ -229,7 +153,7 @@ impl<'a> LanguageModel for Ollama<'a> {
             context: options.context,
         };
 
-        let url = format!("{}/api/generate", self.base_url()?);
+        let url = format!("{}/api/generate", self.base_url);
         let stream = SseClient::post(&url, Some(serde_json::to_string(&body).unwrap()));
         let stream = stream.map(|event| {
             let parsed_message = serde_json::from_str::<OllamaGenerateStreamItemResponse>(&event);
@@ -248,9 +172,9 @@ impl<'a> LanguageModel for Ollama<'a> {
 
     async fn generate_embedding(&self, prompt: &str) -> Result<Vec<f32>, LanguageModelError> {
         let client = reqwest::Client::new();
-        let url = format!("{}/api/embeddings", self.base_url()?);
+        let url = format!("{}/api/embeddings", self.base_url);
         let body = OllamaEmbeddingsRequest {
-            model: self.embedding_model()?,
+            model: self.embeddings_model.to_owned(),
             prompt: prompt.to_string(),
         };
         let response = client
@@ -277,12 +201,10 @@ impl<'a> LanguageModel for Ollama<'a> {
     }
 
     fn text_completion_model_name(&self) -> String {
-        self.model().expect("Model not set").to_string()
+        self.model.to_string()
     }
 
     fn embedding_model_name(&self) -> String {
-        self.embedding_model()
-            .expect("Embedding model not set")
-            .to_string()
+        self.embeddings_model.to_string()
     }
 }

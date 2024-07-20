@@ -1,6 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use super::ollama_model;
+pub mod ollama_model {
+    pub const CODESTRAL: &str = "codestral:latest";
+}
+
+pub mod ollama_embedding_model {
+    pub const NOMIC_EMBED_TEXT: &str = "nomic-embed-text:latest";
+}
 
 /// Response from the Ollama API for obtaining information about local models.
 /// Referenced from the Ollama API documentation [here](https://github.com/ollama/ollama/blob/fedf71635ec77644f8477a86c6155217d9213a11/docs/api.md#list-running-models).

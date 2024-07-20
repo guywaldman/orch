@@ -21,3 +21,4 @@ serde_json = "1.0.97"
 thiserror = "1.0.63"
 tokio = { version = "1.28.2", features = ["rt", "macros"] }
 tokio-stream = "0.1.15"
+async-trait = "0.1.81"

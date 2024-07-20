@@ -11,19 +11,13 @@ pub enum ExecutorBuilderError {
     ConfigurationNotSet(String),
 }
 
-#[derive(Debug, Default)]
-pub struct TextExecutorBuilder<'a, L>
-where
-    L: LanguageModel,
-{
-    lm: Option<&'a L>,
+#[derive(Default)]
+pub struct TextExecutorBuilder<'a> {
+    lm: Option<Box<dyn LanguageModel>>,
     preamble: Option<&'a str>,
 }
 
-impl<'a, L> TextExecutorBuilder<'a, L>
-where
-    L: LanguageModel,
-{
+impl<'a> TextExecutorBuilder<'a> {
     pub fn new() -> Self {
         Self {
             lm: None,
@@ -31,7 +25,7 @@ where
         }
     }
 
-    pub fn with_lm(mut self, lm: &'a L) -> Self {
+    pub fn with_lm(mut self, lm: Box<dyn LanguageModel>) -> Self {
         self.lm = Some(lm);
         self
     }
@@ -41,7 +35,7 @@ where
         self
     }
 
-    pub fn try_build(self) -> Result<TextExecutor<'a, L>, ExecutorBuilderError> {
+    pub fn try_build(self) -> Result<TextExecutor<'a>, ExecutorBuilderError> {
         let Some(lm) = self.lm else {
             return Err(ExecutorBuilderError::ConfigurationNotSet(
                 "Language model".to_string(),

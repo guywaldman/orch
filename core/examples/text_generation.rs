@@ -3,11 +3,14 @@
 
 use orch::{
     execution::{StructuredExecutorBuilder, TextExecutorBuilder},
-    lm::OllamaBuilder,
+    lm::{LanguageModelBuilder, LanguageModelProvider, OllamaBuilder, OpenAiBuilder},
 };
 
 #[tokio::main]
 async fn main() {
+    // ! Change this to use a different provider.
+    let provider = LanguageModelProvider::Ollama;
+
     let prompt = "What is 2+2?";
     let system_prompt = "You are a helpful assistant";
 
@@ -15,11 +18,11 @@ async fn main() {
     println!("System prompt: {system_prompt}");
     println!("---");
 
-    let ollama = OllamaBuilder::new().build();
-    let executor = TextExecutorBuilder::new()
-        .with_lm(&ollama)
-        .try_build()
-        .unwrap();
+    let lm = match provider {
+        LanguageModelProvider::Ollama => OllamaBuilder::new().try_build().unwrap(),
+        LanguageModelProvider::OpenAi => OpenAiBuilder::new().try_build().unwrap(),
+    };
+    let executor = TextExecutorBuilder::new().with_lm(&lm).try_build().unwrap();
     let response = executor.execute(prompt).await.expect("Execution failed");
 
     println!("Response:");

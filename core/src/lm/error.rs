@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use super::{LanguageModelProvider, OllamaError};
+use super::{LanguageModelProvider, OllamaError, OpenAiError};
 
 #[derive(Debug, Error)]
 pub enum LanguageModelProviderError {
@@ -48,4 +48,7 @@ pub enum LanguageModelError {
 
     #[error("Ollama error: {0}")]
     Ollama(#[from] OllamaError),
+
+    #[error("OpenAI error: {0}")]
+    OpenAi(#[from] OpenAiError),
 }
