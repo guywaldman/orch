@@ -106,7 +106,6 @@ jobs:
       - name: Install and run ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
-          ollama serve &
           ollama pull phi3:mini
 
       - name: Run rustdoc lints
