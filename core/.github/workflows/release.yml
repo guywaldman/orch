@@ -1,0 +1,28 @@
+name: "CI"
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ["**[0-9]+.[0-9]+.[0-9]+*"]
+
+jobs:
+  test:
+    strategy:
+      fail-fast: true
+      matrix:
+        target: [x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu]
+    name: publish on crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          sudo apt-get update
+          sudo apt install libxcb-xfixes0-dev
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+      - run: cargo build
+        name: build
+      - run: cargo publish --token ${{ secrets.CRATES_IO_API_TOKEN }}
