@@ -47,10 +47,28 @@ jobs:
 
       - uses: Swatinem/rust-cache@v1
 
+      - name: Install and run ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          ollama pull phi3:mini
+
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
+
+      - name: Run examples
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --examples
+
+      - name: Run doc tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --doc
 
   lints:
     name: Lints
@@ -83,10 +101,16 @@ jobs:
           command: clippy
           args: -- -D warnings
 
-      # - name: Run rustdoc lints
-      #   uses: actions-rs/cargo@v1
-      #   env:
-      #     RUSTDOCFLAGS: "-D missing_docs -D rustdoc::missing_doc_code_examples"
-      #   with:
-      #     command: doc
-      #     args: --workspace --all-features --no-deps --document-private-items
+      - name: Install and run ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          ollama pull phi3:mini
+
+      - name: Run rustdoc lints
+        uses: actions-rs/cargo@v1
+        env:
+          RUSTDOCFLAGS: "-D missing_docs -D rustdoc::missing_doc_code_examples"
+        with:
+          command: doc
+          args: --workspace --all-features --no-deps --document-private-items
