@@ -11,9 +11,17 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
+      - name: Get current branch
+        id: check_step
+        run: |
+          raw=$(git branch -r --contains ${{ github.ref }})
+          branch=${raw##*/}
+          echo "{name}=branch" >> $GITHUB_OUTPUT
+          echo "Branch is $branch."
+      
       - name: Exit if not on main branch
-        if: env.BRANCH_NAME != 'main'
-        run: exit -1
+        if: steps.check_step.outputs.branch != 'main'
+        run: exit 1
 
       - name: Checkout sources
         uses: actions/checkout@v2
