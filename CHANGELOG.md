@@ -1,5 +1,9 @@
 # Changelog
 
+# Version 0.0.8
+
+- Added support for boolean fields in the response options
+
 # Version 0.0.7
 
 - Fixed issue where the `orch` crate was not used for types in the proc macros
