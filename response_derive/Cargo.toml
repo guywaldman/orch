@@ -1,9 +1,9 @@
 [package]
 name = "orch_response_derive"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 license = "MIT"
-description = "Utilities for working with orch Executor responses"
+description = "Derive macros for orch Executor responses"
 homepage = "https://github.com/guywaldman/orch"
 repository = "https://github.com/guywaldman/orch"
 keywords = ["llm", "openai", "ollama", "rust"]
@@ -12,7 +12,7 @@ keywords = ["llm", "openai", "ollama", "rust"]
 proc-macro = true
 
 [dependencies]
-orch_response = { path = "../response" }
+orch_response = { path = "../response", version = "0.0.4" }
 darling = "0.20.10"
 proc-macro2 = "1.0.86"
 quote = "1.0.36"

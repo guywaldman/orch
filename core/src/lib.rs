@@ -50,7 +50,7 @@
 //! ```no_run
 //! use orch::execution::*;
 //! use orch::lm::*;
-//! use orch_response_derive::*;
+//! use orch::response::*;
 //!
 //! #[derive(OrchResponseOptions)]
 //! pub enum CapitalCityExecutorResponseOptions {
@@ -122,3 +122,8 @@
 pub mod execution;
 pub mod lm;
 mod net;
+
+pub mod response {
+    pub use orch_response::*;
+    pub use orch_response_derive::*;
+}

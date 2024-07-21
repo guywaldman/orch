@@ -1,7 +1,12 @@
 [package]
 name = "orch_response"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
+license = "MIT"
+description = "Models for orch Executor responses"
+homepage = "https://github.com/guywaldman/orch"
+repository = "https://github.com/guywaldman/orch"
+keywords = ["llm", "openai", "ollama", "rust"]
 
 [dependencies]
 serde = "1.0.204"
