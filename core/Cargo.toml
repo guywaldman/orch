@@ -1,6 +1,6 @@
 [package]
 name = "orch"
-version = "0.0.7"
+version = "0.0.8"
 edition = "2021"
 license = "MIT"
 description = "Language model orchestration library"
@@ -9,8 +9,8 @@ repository = "https://github.com/guywaldman/orch"
 keywords = ["llm", "openai", "ollama", "rust"]
 
 [dependencies]
-orch_response = { path = "../response", version = "0.0.7" }
-orch_response_derive = { path = "../response_derive", version = "0.0.7" }
+orch_response = { path = "../response", version = "0.0.8" }
+orch_response_derive = { path = "../response_derive", version = "0.0.8" }
 async-gen = "0.2.3"
 dotenv = "0.15.0"
 dyn-clone = "1.0.17"
