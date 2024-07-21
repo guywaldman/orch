@@ -11,20 +11,12 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
+      - name: Exit if not on main branch
+        if: endsWith(github.event.base_ref, 'main') == false
+        run: exit 1
+
       - name: Checkout sources
         uses: actions/checkout@v2
-
-      - name: Get current branch
-        id: check_step
-        run: |
-          raw=$(git branch -r --contains ${{ github.ref }})
-          branch=${raw##*/}
-          echo "{name}=branch" >> $GITHUB_OUTPUT
-          echo "Branch is $branch."
-      
-      - name: Exit if not on main branch
-        if: steps.check_step.outputs.branch != 'main'
-        run: exit 1
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
