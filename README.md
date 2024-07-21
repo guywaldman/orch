@@ -1,7 +1,7 @@
 # orch
 
-![Crates.io Version](https://img.shields.io/crates/v/orch)
-![Crates.io Total Downloads](https://img.shields.io/crates/d/orch)
+![Crates.io Version](https://img.shields.io/crates/v/orch?link=https%3A%2F%2Fcrates.io%2Fcrates%2Forch)
+![Crates.io Total Downloads](https://img.shields.io/crates/d/orch?link=https%3A%2F%2Fcrates.io%2Fcrates%2Forch)
 
 `orch` is a library for building language model powered applications and agents for the Rust programming language.
 It was primarily built for usage in [magic-cli](https://github.com/guywaldman/magic-cli), but can be used in other contexts as well.
