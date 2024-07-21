@@ -18,5 +18,12 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Publish to crates.io
-        run: cargo publish --token ${{ secrets.CRATES_IO_API_TOKEN }}
+      - name: Publish `orch_response`
+        run: cargo publish -p orch_response --token ${{ secrets.CRATES_IO_API_TOKEN }}
+      
+      - name: Publish `orch_response_derive`
+        run: cargo publish -p orch_response_derive --token ${{ secrets.CRATES_IO_API_TOKEN }}
+
+      - name: Publish `orch`
+        run: cargo publish -p orch --token ${{ secrets.CRATES_IO_API_TOKEN }}
+        
