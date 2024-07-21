@@ -146,6 +146,10 @@ fn ast_type_to_str(ty: &syn::Type) -> Result<String, String> {
                     // SUPPORTED: String
                     Ok("string".to_owned())
                 }
+                "bool" => {
+                    // SUPPORTED: bool
+                    Ok("boolean".to_owned())
+                }
                 "Vec" => {
                     let PathArguments::AngleBracketed(ab) = &tp.path.segments.first().unwrap().arguments else {
                         return Err(format!("Unsupported/unexpected type: {:?}", ty).to_owned());
