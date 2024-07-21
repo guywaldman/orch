@@ -18,10 +18,10 @@ use tokio_stream::{self as stream};
 use crate::*;
 
 #[derive(Debug, Clone)]
-pub struct OpenAi<'a> {
-    pub api_key: &'a str,
-    pub model: &'a str,
-    pub embeddings_model: &'a str,
+pub struct OpenAi {
+    pub api_key: String,
+    pub model: String,
+    pub embeddings_model: String,
     pub embedding_dimensions: usize,
 }
 
@@ -46,7 +46,7 @@ pub enum OpenAiError {
 }
 
 #[async_trait]
-impl<'a> LanguageModel for OpenAi<'a> {
+impl LanguageModel for OpenAi {
     async fn text_complete(
         &self,
         prompt: &str,

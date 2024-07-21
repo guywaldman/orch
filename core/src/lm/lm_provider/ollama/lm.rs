@@ -19,18 +19,18 @@ use super::{
 };
 
 #[derive(Debug, Clone)]
-pub struct Ollama<'a> {
-    pub base_url: &'a str,
-    pub model: &'a str,
-    pub embeddings_model: &'a str,
+pub struct Ollama {
+    pub base_url: String,
+    pub model: String,
+    pub embeddings_model: String,
 }
 
-impl Default for Ollama<'_> {
+impl Default for Ollama {
     fn default() -> Self {
         Self {
-            base_url: "http://localhost:11434",
-            model: ollama_model::CODESTRAL,
-            embeddings_model: ollama_embedding_model::NOMIC_EMBED_TEXT,
+            base_url: "http://localhost:11434".to_string(),
+            model: ollama_model::CODESTRAL.to_string(),
+            embeddings_model: ollama_embedding_model::NOMIC_EMBED_TEXT.to_string(),
         }
     }
 }
@@ -55,7 +55,7 @@ pub enum OllamaError {
     ApiUnavailable(String),
 }
 
-impl<'a> Ollama<'a> {
+impl Ollama {
     /// Lists the running models in the Ollama API.
     ///
     /// # Returns
@@ -103,7 +103,7 @@ impl<'a> Ollama<'a> {
 }
 
 #[async_trait]
-impl<'a> LanguageModel for Ollama<'a> {
+impl LanguageModel for Ollama {
     async fn text_complete(
         &self,
         prompt: &str,

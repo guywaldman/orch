@@ -33,7 +33,7 @@ impl<'a> OllamaBuilder<'a> {
     }
 }
 
-impl<'a> LanguageModelBuilder<Ollama<'a>> for OllamaBuilder<'a> {
+impl<'a> LanguageModelBuilder<Ollama> for OllamaBuilder<'a> {
     fn new() -> Self {
         Self {
             base_url: Some("http://localhost:11434"),
@@ -42,7 +42,7 @@ impl<'a> LanguageModelBuilder<Ollama<'a>> for OllamaBuilder<'a> {
         }
     }
 
-    fn try_build(self) -> Result<Ollama<'a>, LanguageModelBuilderError> {
+    fn try_build(self) -> Result<Ollama, LanguageModelBuilderError> {
         let Some(base_url) = self.base_url else {
             return Err(LanguageModelBuilderError::ConfigurationNotSet(
                 "Base URL".to_string(),
@@ -59,9 +59,9 @@ impl<'a> LanguageModelBuilder<Ollama<'a>> for OllamaBuilder<'a> {
             ));
         };
         Ok(Ollama {
-            base_url,
-            model,
-            embeddings_model,
+            base_url: base_url.to_owned(),
+            model: model.to_owned(),
+            embeddings_model: embeddings_model.to_owned(),
         })
     }
 }

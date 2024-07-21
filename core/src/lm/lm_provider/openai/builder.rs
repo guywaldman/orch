@@ -49,7 +49,7 @@ impl<'a> OpenAiBuilder<'a> {
     }
 }
 
-impl<'a> LanguageModelBuilder<OpenAi<'a>> for OpenAiBuilder<'a> {
+impl<'a> LanguageModelBuilder<OpenAi> for OpenAiBuilder<'a> {
     fn new() -> Self {
         Self {
             api_key: None,
@@ -59,7 +59,7 @@ impl<'a> LanguageModelBuilder<OpenAi<'a>> for OpenAiBuilder<'a> {
         }
     }
 
-    fn try_build(self) -> Result<OpenAi<'a>, LanguageModelBuilderError> {
+    fn try_build(self) -> Result<OpenAi, LanguageModelBuilderError> {
         let Some(api_key) = self.api_key else {
             return Err(LanguageModelBuilderError::ConfigurationNotSet(
                 "API key".to_string(),
@@ -81,9 +81,9 @@ impl<'a> LanguageModelBuilder<OpenAi<'a>> for OpenAiBuilder<'a> {
             ));
         };
         Ok(OpenAi {
-            api_key,
-            model,
-            embeddings_model,
+            api_key: api_key.to_owned(),
+            model: model.to_owned(),
+            embeddings_model: embeddings_model.to_owned(),
             embedding_dimensions,
         })
     }

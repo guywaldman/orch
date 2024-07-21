@@ -10,7 +10,7 @@ pub enum LanguageModelProvider {
     OpenAi,
 }
 
-pub enum LanguageModelImplementation<'a> {
-    Ollama(Ollama<'a>),
-    OpenAi(OpenAi<'a>),
+pub enum OrchLanguageModel {
+    Ollama(Ollama),
+    OpenAi(OpenAi),
 }
