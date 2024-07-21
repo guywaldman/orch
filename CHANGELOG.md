@@ -1,5 +1,9 @@
 # Changelog
 
+# Version 0.0.11
+
+No functional changes.
+
 # Version 0.0.10
 
 No functional changes.
