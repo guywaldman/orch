@@ -96,7 +96,7 @@ pub(crate) fn derive_impl(input: proc_macro::TokenStream) -> proc_macro::TokenSt
             });
             let typ = syn::LitStr::new(&typ, variant_field.span());
             schema_fields.push(quote! {
-                ::orch_response::ResponseSchemaField {
+                ::orch::response::ResponseSchemaField {
                     name: #field.to_string(),
                     description: #description.to_string(),
                     typ: #typ.to_string(),
@@ -108,7 +108,7 @@ pub(crate) fn derive_impl(input: proc_macro::TokenStream) -> proc_macro::TokenSt
         let shhema_fields = schema_fields.iter();
         let ident_str = syn::LitStr::new(&ident.to_string(), ident.span());
         options_vec_pushes.extend(quote! {
-            options.push(::orch_response::ResponseOption {
+            options.push(::orch::response::ResponseOption {
                 type_name: #ident_str.to_string(),
                 scenario: #scenario.to_string(),
                 description: #description.to_string(),
@@ -121,8 +121,8 @@ pub(crate) fn derive_impl(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 
     let vec_capacity = data.variants.len();
     output.extend(quote! {
-        impl ::orch_response::ResponseOptions<#derived_enum_ident> for #parser_struct_ident {
-            fn options(&self) -> Vec<::orch_response::ResponseOption> {
+        impl ::orch::response::ResponseOptions<#derived_enum_ident> for #parser_struct_ident {
+            fn options(&self) -> Vec<::orch::response::ResponseOption> {
                 let mut options = Vec::with_capacity(#vec_capacity);
                 #options_vec_pushes
                 options
