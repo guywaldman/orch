@@ -1,5 +1,9 @@
 # Changelog
 
+# Version 0.0.4
+
+No functional changes.
+
 # Version 0.0.3
 
 - Added support for streaming responses
