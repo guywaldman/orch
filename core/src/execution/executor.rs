@@ -1,6 +1,6 @@
 use std::{cell::OnceCell, pin::Pin};
 
-use orch_response::{ResponseOption, ResponseOptions, ResponseSchemaField};
+use orch_response::{OrchResponseVariants, ResponseOption, ResponseSchemaField};
 use thiserror::Error;
 use tokio_stream::Stream;
 
@@ -36,7 +36,7 @@ trait Executor<'a> {
     fn system_prompt(&self) -> String {
         let cell = OnceCell::new();
         cell.get_or_init(|| {
-            let response_options = self.response_options().unwrap_or_default();
+            let response_options = self.variants().unwrap_or_default();
             generate_system_prompt(
                 self.format(),
                 self.preamble().unwrap_or(DEFAULT_PREAMBLE),
@@ -46,7 +46,7 @@ trait Executor<'a> {
         .clone()
     }
 
-    fn response_options(&self) -> Option<Vec<ResponseOption>> {
+    fn variants(&self) -> Option<Vec<ResponseOption>> {
         None
     }
 
@@ -137,22 +137,19 @@ impl<'a> TextExecutor<'a> {
     }
 }
 
-pub struct StructuredExecutor<'a, T>
-where
-    T: serde::de::DeserializeOwned,
-{
+pub struct StructuredExecutor<'a, T> {
     pub(crate) lm: &'a dyn LanguageModel,
     pub(crate) preamble: Option<&'a str>,
-    pub(crate) response_options: &'a dyn ResponseOptions<T>,
+    pub(crate) variants: &'a dyn OrchResponseVariants<T>,
 }
 
-impl<'a, T: serde::de::DeserializeOwned> Executor<'a> for StructuredExecutor<'a, T> {
+impl<'a, T> Executor<'a> for StructuredExecutor<'a, T> {
     fn format(&self) -> ResponseFormat {
         ResponseFormat::Json
     }
 
-    fn response_options(&self) -> Option<Vec<ResponseOption>> {
-        Some(self.response_options.options())
+    fn variants(&self) -> Option<Vec<ResponseOption>> {
+        Some(self.variants.variants())
     }
 
     fn lm(&self) -> &'a dyn LanguageModel {
@@ -167,10 +164,7 @@ impl<'a, T: serde::de::DeserializeOwned> Executor<'a> for StructuredExecutor<'a,
 /// Trait for LLM execution.
 /// This should be implemented for each LLM text generation use-case, where the system prompt
 /// changes according to the trait implementations.
-impl<'a, T> StructuredExecutor<'a, T>
-where
-    T: serde::de::DeserializeOwned,
-{
+impl<'a, T> StructuredExecutor<'a, T> {
     /// Generates a structured response from the LLM (non-streaming).
     ///
     /// # Arguments
@@ -184,15 +178,12 @@ where
         prompt: &'a str,
     ) -> Result<ExecutorTextCompleteResponse<T>, ExecutorError> {
         let text_result = self.text_complete(prompt).await?;
-        let result = self
-            .response_options
-            .parse(&text_result.content)
-            .map_err(|e| {
-                ExecutorError::Parsing(format!(
-                    "Error while parsing response: {e}\nResponse: {:?}",
-                    text_result.content
-                ))
-            })?;
+        let result = self.variants.parse(&text_result.content).map_err(|e| {
+            ExecutorError::Parsing(format!(
+                "Error while parsing response: {e}\nResponse: {:?}",
+                text_result.content
+            ))
+        })?;
         // TODO: Add error correction and handling.
         Ok(ExecutorTextCompleteResponse {
             content: result,

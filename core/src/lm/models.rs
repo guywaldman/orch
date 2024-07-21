@@ -13,7 +13,7 @@ use super::{error::LanguageModelError, LanguageModelProvider};
 /// > `DynClone` is used so that there can be dynamic dispatch of the `Llm` trait,
 /// > especially needed for [magic-cli](https://github.com/guywaldman/magic-cli).
 #[async_trait]
-pub trait LanguageModel: DynClone {
+pub trait LanguageModel: DynClone + Send + Sync {
     /// Generates a response from the LLM.
     ///
     /// # Arguments

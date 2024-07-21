@@ -10,51 +10,48 @@ pub enum OpenAiBuilderError {
     ConfigurationNotSet(String),
 }
 
-pub struct OpenAiBuilder<'a> {
-    api_key: Option<&'a str>,
-    model: Option<&'a str>,
-    embeddings_model: Option<&'a str>,
+pub struct OpenAiBuilder {
+    api_key: Option<String>,
+    model: Option<String>,
+    embeddings_model: Option<String>,
     embedding_dimensions: Option<usize>,
 }
 
-impl<'a> OpenAiBuilder<'a> {
-    pub fn with_api_key(mut self, api_key: &'a str) -> Self {
+impl OpenAiBuilder {
+    pub fn with_api_key(mut self, api_key: String) -> Self {
         self.api_key = Some(api_key);
         self
     }
 
-    pub fn with_model(mut self, model: &'a str) -> Self {
+    pub fn with_model(mut self, model: String) -> Self {
         self.model = Some(model);
         self
     }
 
-    pub fn with_embeddings_model(mut self, embeddings_model: &'a str) -> Self {
-        self.embeddings_model = Some(embeddings_model);
-        match embeddings_model {
+    pub fn with_embeddings_model(mut self, embeddings_model: String) -> Self {
+        self.embeddings_model = Some(embeddings_model.clone());
+        self.embedding_dimensions = match embeddings_model.as_ref() {
             openai_embedding_model::TEXT_EMBEDDING_ADA_002 => {
-                self.embedding_dimensions =
-                    Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002_DIMENSIONS);
+                Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002_DIMENSIONS)
             }
             openai_embedding_model::TEXT_EMBEDDING_3_SMALL => {
-                self.embedding_dimensions =
-                    Some(openai_embedding_model::TEXT_EMBEDDING_3_SMALL_DIMENSIONS);
+                Some(openai_embedding_model::TEXT_EMBEDDING_3_SMALL_DIMENSIONS)
             }
             openai_embedding_model::TEXT_EMBEDDING_3_LARGE => {
-                self.embedding_dimensions =
-                    Some(openai_embedding_model::TEXT_EMBEDDING_3_LARGE_DIMENSIONS);
+                Some(openai_embedding_model::TEXT_EMBEDDING_3_LARGE_DIMENSIONS)
             }
-            _ => {}
-        }
+            _ => None,
+        };
         self
     }
 }
 
-impl<'a> LanguageModelBuilder<OpenAi> for OpenAiBuilder<'a> {
+impl LanguageModelBuilder<OpenAi> for OpenAiBuilder {
     fn new() -> Self {
         Self {
             api_key: None,
-            model: Some(openai_model::GPT_4O_MINI),
-            embeddings_model: Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002),
+            model: Some(openai_model::GPT_4O_MINI.to_string()),
+            embeddings_model: Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002.to_string()),
             embedding_dimensions: Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002_DIMENSIONS),
         }
     }

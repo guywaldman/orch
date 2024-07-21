@@ -24,13 +24,11 @@ pub struct ResponseSchemaField {
     pub example: String,
 }
 
-pub trait ResponseOptions<T>
-where
-    T: serde::de::DeserializeOwned,
-{
-    fn options(&self) -> Vec<ResponseOption>;
+pub trait OrchResponseVariant: Send + Sync {
+    fn variant() -> ResponseOption;
+}
 
-    fn parse(&self, response: &str) -> Result<T, serde_json::Error> {
-        serde_json::from_str(response)
-    }
+pub trait OrchResponseVariants<T>: Send + Sync {
+    fn variants(&self) -> Vec<ResponseOption>;
+    fn parse(&self, response: &str) -> Result<T, serde_json::Error>;
 }

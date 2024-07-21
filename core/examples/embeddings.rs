@@ -26,13 +26,13 @@ async fn main() {
     let lm: Box<dyn LanguageModel> = match provider {
         LanguageModelProvider::Ollama => Box::new(
             OllamaBuilder::new()
-                .with_embeddings_model(ollama_embedding_model::NOMIC_EMBED_TEXT)
+                .with_embeddings_model(ollama_embedding_model::NOMIC_EMBED_TEXT.to_string())
                 .try_build()
                 .unwrap(),
         ),
         LanguageModelProvider::OpenAi => Box::new(
             OpenAiBuilder::new()
-                .with_api_key(&open_ai_api_key)
+                .with_api_key(open_ai_api_key)
                 .try_build()
                 .unwrap(),
         ),

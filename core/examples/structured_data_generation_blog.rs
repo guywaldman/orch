@@ -6,28 +6,39 @@ use orch::execution::*;
 use orch::lm::*;
 use orch::response::*;
 
-#[derive(OrchResponseOptions)]
-pub enum BlogPostReviewerResponseOption {
-    #[response(
-        scenario = "You have reviewed the blog post",
-        description = "Suggestions for improving the blog post"
-    )]
+#[derive(Variants, serde::Deserialize)]
+#[serde(tag = "response_type")]
+pub enum ResponseVariants {
+    Answer(AnswerResponseVariant),
+    Fail(FailResponseVariant),
+}
+
+#[derive(Variant, serde::Deserialize)]
+#[variant(
+    variant = "Answer",
+    scenario = "You have reviewed the blog post",
+    description = "Suggestions for improving the blog post"
+)]
+pub struct AnswerResponseVariant {
     #[schema(
-        field = "suggestions",
         description = "Suggestions for improving the blog post",
         example = "[\"You wrote 'excellent' in two consecutive paragraphs in section 'Introduction'\"]"
     )]
-    Answer { suggestions: Vec<String> },
-    #[response(
-        scenario = "For some reason you failed to generate suggestions",
-        description = "Reason why you failed to generate suggestions"
-    )]
+    pub suggestions: Vec<String>,
+}
+
+#[derive(Variant, serde::Deserialize)]
+#[variant(
+    variant = "Fail",
+    scenario = "For some reason you failed to generate suggestions",
+    description = "Reason why you failed to generate suggestions"
+)]
+pub struct FailResponseVariant {
     #[schema(
-        field = "reason",
         description = "Reason why you failed to generate suggestions",
         example = "Content was invalid"
     )]
-    Fail { reason: String },
+    pub reason: String,
 }
 
 #[tokio::main]
@@ -35,13 +46,14 @@ async fn main() {
     // ! Change this to use a different provider.
     let provider = LanguageModelProvider::OpenAi;
 
-    let prompt = "
-		# Introduction
-		Hello, I am Guy. This is my first blog post!
-		";
+    let args = std::env::args().collect::<Vec<_>>();
+    let blog_file_path = args.get(1).unwrap_or_else(|| {
+        eprintln!("ERROR: Please provide a path to a blog file");
+        std::process::exit(1);
+    });
+    let prompt = std::fs::read_to_string(blog_file_path).expect("Failed to read blog file");
 
-    println!("Prompt: {prompt}");
-    println!("---");
+    println!("Analyzing blog post at path '{blog_file_path}'...");
 
     // Use a different language model, per the `provider` variable (feel free to change it).
     let open_ai_api_key = {
@@ -55,13 +67,13 @@ async fn main() {
     let lm: Box<dyn LanguageModel> = match provider {
         LanguageModelProvider::Ollama => Box::new(
             OllamaBuilder::new()
-                .with_model(ollama_model::PHI3_MINI)
+                .with_model(ollama_model::PHI3_MINI.to_string())
                 .try_build()
                 .unwrap(),
         ),
         LanguageModelProvider::OpenAi => Box::new(
             OpenAiBuilder::new()
-                .with_api_key(&open_ai_api_key)
+                .with_api_key(open_ai_api_key)
                 .try_build()
                 .unwrap(),
         ),
@@ -69,12 +81,30 @@ async fn main() {
 
     let executor = StructuredExecutorBuilder::new()
         .with_lm(&*lm)
-        .with_preamble("You are an experienced writer and blog post reviewer who helps users improve their blog posts.")
-        .with_options(&options!(BlogPostReviewerResponseOption))
+        .with_preamble("
+            You are an experienced writer and blog post reviewer who helps users improve their blog posts.
+            You will receive a blog post written in Markdown, and you will need to provide suggestions for improving it.
+            Provide *specific* suggestions for improving the blog post, these can as nitpicky as you want.
+            Consider things such as grammar, spelling, clarity, and conciseness.
+            Even things like mentioning the same phrase too much in one paragraph, etc.
+            The tone should be personal, friendly and professional at the same time.
+
+            Be very specific and refer to specific sentences, paragraph and sections of the blog post.
+        ")
+        .with_options(&variants!(ResponseVariants))
         .try_build()
         .unwrap();
-    let response = executor.execute(prompt).await.expect("Execution failed");
+    let response = executor.execute(&prompt).await.expect("Execution failed");
 
-    println!("Response:");
-    println!("{:?}", response.content);
+    match response.content {
+        ResponseVariants::Answer(answer) => {
+            println!("Suggestions for improving the blog post:");
+            for suggestion in answer.suggestions {
+                println!("- {}", suggestion);
+            }
+        }
+        ResponseVariants::Fail(fail) => {
+            println!("Model failed to generate a response: {}", fail.reason);
+        }
+    }
 }
