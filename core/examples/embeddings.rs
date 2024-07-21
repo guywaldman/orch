@@ -1,5 +1,4 @@
 //! This example demonstrates how to use the `Executor` to generate embeddings from the language model.
-//!
 //! Run like so: `cargo run --example embeddings`
 
 use orch::execution::*;

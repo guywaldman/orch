@@ -1,5 +1,4 @@
 //! This example demonstrates how to use the `Executor` to generate a streaming response from the LLM.
-//!
 //! Run like so: `cargo run --example text_generation_stream`
 
 use orch::execution::*;
