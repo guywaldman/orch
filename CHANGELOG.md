@@ -1,5 +1,9 @@
 # Changelog
 
+# Version 0.0.9
+
+No functional changes.
+
 # Version 0.0.8
 
 - Added support for boolean fields in the response options
