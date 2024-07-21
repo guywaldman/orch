@@ -3,13 +3,25 @@
 ![Crates.io Version](https://img.shields.io/crates/v/orch)
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/orch)
 
-
 `orch` is a library for building language model powered applications and agents for the Rust programming language.
 It was primarily built for usage in [magic-cli](https://github.com/guywaldman/magic-cli), but can be used in other contexts as well.
 
 > [!NOTE]
 >
 > If the project gains traction, this can be compiled as an addon to other languages such as Python or a standalone WebAssembly module.
+
+# Installation
+
+```shell
+cargo add orch
+```
+
+Alternatively, add `orch as a dependency to your `Cargo.toml` file:
+
+```toml
+[dependencies]
+orch = "0.0.3"
+```
 
 # Basic Usage
 
