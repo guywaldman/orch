@@ -3,13 +3,16 @@ on:
   push:
     tags: ["[0-9]+.[0-9]+.[0-9]+"]
 
+env:
+ BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
+
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
     steps:
       - name: Exit if not on main branch
-        if: endsWith(github.ref, 'main') == false
+        if: env.BRANCH_NAME != 'main'
         run: exit -1
 
       - name: Checkout sources
