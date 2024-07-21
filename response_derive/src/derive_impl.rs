@@ -9,7 +9,7 @@ pub(crate) fn response_variants_derive(input: proc_macro::TokenStream) -> proc_m
 
     // Bring traits into scope.
     output.extend(quote! {
-        use ::orch::response::OrchResponseVariant;
+        use ::orch_response::OrchResponseVariant;
         use ::serde::de::Error;
     });
 
@@ -39,7 +39,7 @@ pub(crate) fn response_variants_derive(input: proc_macro::TokenStream) -> proc_m
     let derived_enum_struct_ident = syn::Ident::new(&format!("{}Derived", original_enum_ident), original_enum_ident.span());
 
     output.extend(quote! {
-        #[derive(Debug)]
+        #[derive(::std::fmt::Debug, ::std::clone::Clone)]
         pub struct #derived_enum_struct_ident;
     });
 
@@ -59,8 +59,8 @@ pub(crate) fn response_variants_derive(input: proc_macro::TokenStream) -> proc_m
     }
 
     output.extend(quote! {
-        impl ::orch::response::OrchResponseVariants<#original_enum_ident> for #derived_enum_struct_ident {
-            fn variants(&self) -> Vec<::orch::response::ResponseOption> {
+        impl ::orch_response::OrchResponseVariants<#original_enum_ident> for #derived_enum_struct_ident {
+            fn variants(&self) -> Vec<::orch_response::ResponseOption> {
                 let mut options = Vec::with_capacity(#vec_capacity);
                 #options_vec_pushes
                 options
@@ -126,7 +126,7 @@ pub fn response_variant_derive(input: proc_macro::TokenStream) -> proc_macro::To
         let typ = syn::LitStr::new(&typ, variant_field.span());
         let field_ident = syn::LitStr::new(&variant_field.ident.as_ref().unwrap().to_string(), variant_field.span());
         schema_fields.push(quote! {
-            ::orch::response::ResponseSchemaField {
+            ::orch_response::ResponseSchemaField {
                 name: #field_ident.to_string(),
                 description: #description.to_string(),
                 typ: #typ.to_string(),
@@ -136,9 +136,9 @@ pub fn response_variant_derive(input: proc_macro::TokenStream) -> proc_macro::To
     }
 
     quote! {
-        impl ::orch::response::OrchResponseVariant for #original_struct_ident {
-            fn variant() -> ::orch::response::ResponseOption {
-                ::orch::response::ResponseOption {
+        impl ::orch_response::OrchResponseVariant for #original_struct_ident {
+            fn variant() -> ::orch_response::ResponseOption {
+                ::orch_response::ResponseOption {
                     type_name: #variant.to_string(),
                     scenario: #scenario.to_string(),
                     description: #description.to_string(),
@@ -185,6 +185,30 @@ fn ast_type_to_str(ty: &syn::Type) -> Result<String, String> {
                 "bool" => {
                     // SUPPORTED: bool
                     Ok("boolean".to_owned())
+                }
+                "Option" => {
+                    let PathArguments::AngleBracketed(ab) = &tp.path.segments.first().unwrap().arguments else {
+                        return Err(format!("Unsupported/unexpected type: {:?}", ty).to_owned());
+                    };
+                    let syn::GenericArgument::Type(t) = ab.args.first().unwrap() else {
+                        return Err(format!("Unsupported/unexpected type: {:?}", ty).to_owned());
+                    };
+                    let syn::Type::Path(p) = t else {
+                        return Err(format!("Unsupported/unexpected type: {:?}", ty).to_owned());
+                    };
+                    let t = p.path.segments.first().unwrap().ident.to_string();
+
+                    match t.as_ref() {
+                        "String" => {
+                            // SUPPORTED: Option<String>
+                            Ok("string?".to_owned())
+                        }
+                        "bool" => {
+                            // SUPPORTED: Option<bool>
+                            Ok("boolean?".to_owned())
+                        }
+                        _ => Err(format!("Unsupported/unexpected type: {}", t).to_owned()),
+                    }
                 }
                 "Vec" => {
                     let PathArguments::AngleBracketed(ab) = &tp.path.segments.first().unwrap().arguments else {

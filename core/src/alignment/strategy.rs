@@ -1,0 +1,226 @@
+use async_recursion::async_recursion;
+use orch_response_derive::{variants, Variant, Variants};
+use thiserror::Error;
+
+use crate::{
+    execution::{StructuredExecutor, StructuredExecutorBuilder},
+    lm::LanguageModel,
+};
+
+#[derive(Debug, Error)]
+pub enum AlignmentError {
+    #[error("Execution failed: {0}")]
+    ExecutionFailed(String),
+
+    #[error("Internal error: {0}")]
+    InternalError(String),
+
+    #[error("Max retries exceeded ({0} retries)")]
+    MaxRetriesExceeded(usize),
+}
+
+pub struct AlignmentStrategy {
+    pub(crate) lm: Box<dyn LanguageModel>,
+    pub(crate) retries: usize,
+}
+
+#[derive(Variants, Clone, serde::Deserialize)]
+pub enum AlignmentResponse {
+    ResponseCorrection(ResponseCorrectionResponseVariant),
+    SchemaCorrection(SchemaCorrectionResponseVariant),
+    NoCorrection(NoCorrectionResponseVariant),
+    Fail(FailResponseVariant),
+}
+
+#[derive(Variant, Clone, serde::Deserialize)]
+#[variant(
+    variant = "ResponseCorrection",
+    scenario = "The response format is correct, but the response content itself is incorrect",
+    description = "A correction and a reason why it is needed"
+)]
+pub struct ResponseCorrectionResponseVariant {
+    #[schema(
+        description = "Correction of the phrase",
+        example = "{ \"capital\": \"Paris\" }"
+    )]
+    pub correction: String,
+
+    #[schema(
+        description = "Short reason why a correction is needed",
+        example = "The capital of France is not London as the original model returned, but Paris"
+    )]
+    pub reason: String,
+}
+
+#[derive(Variant, Clone, serde::Deserialize)]
+#[variant(
+    variant = "SchemaCorrection",
+    scenario = "The schema of the response is incorrect",
+    description = "Explanation of why the schema is incorrect"
+)]
+pub struct SchemaCorrectionResponseVariant {
+    #[schema(
+        description = "Correction of the schema, in natural language",
+        example = "\"'capital' should be a string, not a number'\" or \"The 'capital' field has a typo and starts with an uppercase letter\""
+    )]
+    pub correction: String,
+
+    #[schema(
+        description = "Short reason why a correction is needed",
+        example = "The 'capital' field is a number, not a string"
+    )]
+    pub reason: String,
+}
+
+#[derive(Variant, Clone, serde::Deserialize)]
+#[variant(
+    variant = "NoCorrection",
+    scenario = "No correction needed, the original response satisfies the expected output",
+    description = "Short reason why a correction is not needed"
+)]
+pub struct NoCorrectionResponseVariant {
+    #[schema(
+        description = "Short reason why a correction is not needed",
+        example = "The user asked for the capital city of France, and the answer is indeed Paris"
+    )]
+    pub reason: String,
+}
+
+#[derive(Variant, Clone, serde::Deserialize)]
+#[variant(
+    variant = "Fail",
+    scenario = "You don't know how to verify whether the answer is correct or not. You should only go for this response in extreme cases",
+    description = "Reason why you failed to determine whether the answer is correct or not"
+)]
+pub struct FailResponseVariant {
+    #[schema(
+        description = "Reason why you failed to determine whether the answer is correct or not",
+        example = "The question is extremely vague and the model returned something completely unrelated"
+    )]
+    pub reason: String,
+}
+
+impl AlignmentStrategy {
+    const PREAMBLE: &'static str = "
+    Your purpose is to receive a response from a language model and make sure (and correct otherwise) whether the response is expected or not.  
+    Being \"expected\" means that the response is correct and matches the expected output.
+    ";
+
+    /// Aligns the response of the language model.
+    /// Tries at least once, and continues according to the [`AlignmentStrategy`]
+    /// (e.g., number of retries).
+    pub async fn align_structured(
+        &self,
+        original_preamble: &str,
+        original_prompt: &str,
+        original_response: &str,
+    ) -> Result<String, AlignmentError> {
+        let mut iterated_response = original_response;
+        let mut retry_count = 0;
+        let mut prev_alignment_response = None;
+
+        loop {
+            let response = self
+                .request_correction(
+                    original_preamble,
+                    original_prompt,
+                    &iterated_response,
+                    prev_alignment_response,
+                )
+                .await?;
+
+            match &response {
+                AlignmentResponse::NoCorrection(_) => {
+                    // Found no correction, can return the original response.
+                    return Ok(iterated_response.to_owned());
+                }
+                response => {
+                    // Requires correction.
+                    retry_count += 1;
+
+                    if retry_count >= self.retries {
+                        return Err(AlignmentError::MaxRetriesExceeded(retry_count));
+                    }
+
+                    prev_alignment_response = Some(response.clone());
+                }
+            }
+        }
+    }
+
+    #[async_recursion]
+    async fn request_correction(
+        &self,
+        original_preamble: &str,
+        original_prompt: &str,
+        original_response: &str,
+        prev_alignment_response: Option<AlignmentResponse>,
+    ) -> Result<AlignmentResponse, AlignmentError> {
+        let mut preamble = format!(
+            "
+            {base_preamble}
+
+            The model received the original instructions:
+            {original_preamble}
+
+            And the original prompt:
+            {original_prompt}
+
+            And the original response:
+            {original_response}
+    ",
+            base_preamble = Self::PREAMBLE,
+        );
+        // If `alignment_response` is `None`, then this was the first attempt and no additional preamble is needed.
+        if let Some(prev_alignment_response) = prev_alignment_response {
+            // TODO: Add context of more tries?
+            preamble.push_str(&format!(
+                "
+                IMPORTANT CONTEXT:
+                Before receiving the previous correction, the model has already responded with the following:
+
+                {}
+
+                And received the following corrections:
+                ",
+                original_response
+            ));
+
+            match prev_alignment_response {
+                AlignmentResponse::ResponseCorrection(response_correction) => {
+                    preamble.push_str(&format!(
+                        "CORRECTION: The response content was incorrect, this is the correction: {}",
+                        response_correction.correction,
+                    ));
+                }
+                AlignmentResponse::SchemaCorrection(schema_correction) => {
+                    preamble.push_str(&format!(
+                        "CORRECTION: The response schema was incorrect for the following reason: {}
+                        This is the correction: {}
+                        ",
+                        schema_correction.correction, schema_correction.reason
+                    ));
+                }
+                _ => {
+                    // No error (this is unexpected) - return the original response.
+                    return Err(AlignmentError::InternalError(
+                        "Requested correction with no relevant correction response".to_owned(),
+                    ));
+                }
+            }
+        }
+
+        let executor: StructuredExecutor<AlignmentResponse> = StructuredExecutorBuilder::new()
+            .with_lm(&*self.lm)
+            .with_preamble(&preamble)
+            .with_options(Box::new(variants!(AlignmentResponse)))
+            .try_build()
+            .unwrap();
+        let response = executor
+            .execute(original_prompt)
+            .await
+            .map_err(|e| AlignmentError::ExecutionFailed(e.to_string()))?;
+
+        Ok(response.content)
+    }
+}

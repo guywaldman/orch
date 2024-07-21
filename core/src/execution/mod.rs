@@ -8,7 +8,11 @@
 mod builder;
 mod executor;
 mod response;
+mod structured_executor;
+mod text_executor;
 
 pub use builder::*;
 pub use executor::*;
 pub use response::*;
+pub use structured_executor::*;
+pub use text_executor::*;

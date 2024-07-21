@@ -1,18 +1,15 @@
-use std::{cell::OnceCell, pin::Pin};
+use std::pin::Pin;
 
-use orch_response::{OrchResponseVariants, ResponseOption, ResponseSchemaField};
+use orch_response::ResponseOption;
 use thiserror::Error;
 use tokio_stream::Stream;
 
-use crate::lm::{
-    LanguageModel, LanguageModelError, TextCompleteOptions, TextCompleteStreamOptions,
+use crate::{
+    alignment::AlignmentError,
+    lm::{LanguageModel, LanguageModelError, TextCompleteOptions},
 };
 
 use super::ResponseFormat;
-
-// use super::{ExecutorOptionResponseParser, ExecutorResponsOption, ExecutorResponseFormat};
-
-pub(crate) const DEFAULT_PREAMBLE: &str = "You are a helpful assistant";
 
 #[derive(Debug, Error)]
 pub enum ExecutorError {
@@ -21,9 +18,12 @@ pub enum ExecutorError {
 
     #[error("Parsing LM response failed: {0}")]
     Parsing(String),
+
+    #[error("Alignment error: {0}")]
+    Alignment(AlignmentError),
 }
 
-trait Executor<'a> {
+pub(crate) trait Executor<'a> {
     /// Generates a text completion from the LLM (non-streaming).
     async fn text_complete(
         &self,
@@ -33,18 +33,7 @@ trait Executor<'a> {
     }
 
     /// System prompt (instructions) for the model.
-    fn system_prompt(&self) -> String {
-        let cell = OnceCell::new();
-        cell.get_or_init(|| {
-            let response_options = self.variants().unwrap_or_default();
-            generate_system_prompt(
-                self.format(),
-                self.preamble().unwrap_or(DEFAULT_PREAMBLE),
-                &response_options,
-            )
-        })
-        .clone()
-    }
+    fn system_prompt(&self) -> String;
 
     fn variants(&self) -> Option<Vec<ResponseOption>> {
         None
@@ -52,156 +41,7 @@ trait Executor<'a> {
 
     fn format(&self) -> ResponseFormat;
 
-    fn preamble(&self) -> Option<&str> {
-        Some("You are a helpful assistant")
-    }
-
     fn lm(&self) -> &'a dyn LanguageModel;
-}
-
-pub struct TextExecutor<'a> {
-    pub(crate) lm: &'a dyn LanguageModel,
-    pub(crate) preamble: Option<&'a str>,
-}
-
-impl<'a> Executor<'a> for TextExecutor<'a> {
-    fn format(&self) -> ResponseFormat {
-        ResponseFormat::Text
-    }
-
-    fn lm(&self) -> &'a dyn LanguageModel {
-        self.lm
-    }
-
-    fn preamble(&self) -> Option<&str> {
-        self.preamble
-    }
-}
-
-/// Trait for LLM execution.
-/// This should be implemented for each LLM text generation use-case, where the system prompt
-/// changes according to the trait implementations.
-impl<'a> TextExecutor<'a> {
-    /// Generates a streaming response from the LLM.
-    ///
-    /// # Arguments
-    /// * `prompt` - The prompt to generate a response for.
-    /// * `system_prompt` - The system prompt to use for the generation.
-    ///
-    /// # Returns
-    /// A [Result] containing the response from the LLM or an error if there was a problem.
-    pub async fn execute_stream(
-        &'a self,
-        prompt: &'a str,
-    ) -> Result<ExecutorTextCompleteStreamResponse, ExecutorError> {
-        let options = TextCompleteStreamOptions {
-            ..Default::default()
-        };
-        let system_prompt = self.system_prompt();
-        let response = self
-            .lm
-            .text_complete_stream(prompt, &system_prompt, options)
-            .await
-            .map_err(ExecutorError::General)?;
-        Ok(ExecutorTextCompleteStreamResponse {
-            stream: response.stream,
-            context: ExecutorContext {},
-        })
-    }
-
-    /// Generates a response from the LLM (non-streaming).
-    ///
-    /// # Arguments
-    /// * `prompt` - The prompt to generate a response for.
-    /// * `system_prompt` - The system prompt to use for the generation.
-    ///
-    /// # Returns
-    /// A [Result] containing the response from the LLM or an error if there was a problem.
-    pub async fn execute(
-        &'a self,
-        prompt: &'a str,
-    ) -> Result<ExecutorTextCompleteResponse<String>, ExecutorError> {
-        self.text_complete(prompt).await
-    }
-
-    /// Generates an embedding from the LLM.
-    ///
-    /// # Arguments
-    /// * `prompt` - The item to generate an embedding for.
-    ///
-    /// # Returns
-    ///
-    /// A [Result] containing the embedding or an error if there was a problem.
-    pub async fn generate_embedding(&'a self, prompt: &'a str) -> Result<Vec<f32>, ExecutorError> {
-        generate_embedding(self.lm, prompt).await
-    }
-}
-
-pub struct StructuredExecutor<'a, T> {
-    pub(crate) lm: &'a dyn LanguageModel,
-    pub(crate) preamble: Option<&'a str>,
-    pub(crate) variants: &'a dyn OrchResponseVariants<T>,
-}
-
-impl<'a, T> Executor<'a> for StructuredExecutor<'a, T> {
-    fn format(&self) -> ResponseFormat {
-        ResponseFormat::Json
-    }
-
-    fn variants(&self) -> Option<Vec<ResponseOption>> {
-        Some(self.variants.variants())
-    }
-
-    fn lm(&self) -> &'a dyn LanguageModel {
-        self.lm
-    }
-
-    fn preamble(&self) -> Option<&str> {
-        self.preamble
-    }
-}
-
-/// Trait for LLM execution.
-/// This should be implemented for each LLM text generation use-case, where the system prompt
-/// changes according to the trait implementations.
-impl<'a, T> StructuredExecutor<'a, T> {
-    /// Generates a structured response from the LLM (non-streaming).
-    ///
-    /// # Arguments
-    /// * `prompt` - The prompt to generate a response for.
-    /// * `system_prompt` - The system prompt to use for the generation.
-    ///
-    /// # Returns
-    /// A [Result] containing the response from the LLM or an error if there was a problem.
-    pub async fn execute(
-        &'a self,
-        prompt: &'a str,
-    ) -> Result<ExecutorTextCompleteResponse<T>, ExecutorError> {
-        let text_result = self.text_complete(prompt).await?;
-        let result = self.variants.parse(&text_result.content).map_err(|e| {
-            ExecutorError::Parsing(format!(
-                "Error while parsing response: {e}\nResponse: {:?}",
-                text_result.content
-            ))
-        })?;
-        // TODO: Add error correction and handling.
-        Ok(ExecutorTextCompleteResponse {
-            content: result,
-            context: ExecutorContext {},
-        })
-    }
-
-    /// Generates an embedding from the LLM.
-    ///
-    /// # Arguments
-    /// * `prompt` - The item to generate an embedding for.
-    ///
-    /// # Returns
-    ///
-    /// A [Result] containing the embedding or an error if there was a problem.
-    pub async fn generate_embedding(&'a self, prompt: &'a str) -> Result<Vec<f32>, ExecutorError> {
-        generate_embedding(self.lm, prompt).await
-    }
 }
 
 // TODO: Support context for completions (e.g., IDs of past conversations in Ollama).
@@ -235,7 +75,7 @@ pub async fn text_complete<'a>(
     })
 }
 
-pub async fn generate_embedding<'a>(
+pub(crate) async fn generate_embedding<'a>(
     lm: &'a dyn LanguageModel,
     prompt: &str,
 ) -> Result<Vec<f32>, ExecutorError> {
@@ -244,81 +84,4 @@ pub async fn generate_embedding<'a>(
         .await
         .map_err(ExecutorError::General)?;
     Ok(response)
-}
-
-pub fn generate_system_prompt(
-    format: ResponseFormat,
-    preamble: &str,
-    response_options: &[ResponseOption],
-) -> String {
-    match format {
-        ResponseFormat::Text => {
-            // In the case of text, the choices are ignored since the choice cannot
-            // be represented in the text format.
-            preamble.to_owned()
-        }
-        ResponseFormat::Json => {
-            let all_types = response_options
-                .iter()
-                .map(|option| option.type_name.clone())
-                .collect::<Vec<_>>();
-
-            let response_options_text = response_options
-                .iter()
-                .map(|option| {
-                    let mut schema_text = String::new();
-                    let mut schema_example = "{".to_string();
-                    let type_field = ResponseSchemaField {
-                        // NOTE: This is assumed by [`orch_response_derive`] to be the discriminator field.
-                        name: "response_type".to_string(),
-                        description: format!(
-                            "The type of the response (\"{}\" in this case)",
-                            option.type_name
-                        )
-                        .to_string(),
-                        typ: "string".to_string(),
-                        example: all_types.first().unwrap().to_string(),
-                    };
-
-                    for (i, field) in option
-                        .schema
-                        .iter()
-                        .chain(std::iter::once(&type_field))
-                        .enumerate()
-                    {
-                        schema_text.push_str(&format!(
-                            "  - `{}` of type {} (description: {})\n\n",
-                            field.name, field.typ, field.description
-                        ));
-                        schema_example
-                            .push_str(&format!("\"{}\": \"{}\"", field.name, field.example));
-
-                        if i < option.schema.len() - 1 {
-                            schema_example.push(',');
-                        }
-                    }
-                    schema_example.push('}');
-
-                    format!(
-                        "SCENARIO: {}\nDESCRIPTION: {}\nSCHEMA:\n{}\nEXAMPLE RESPONSE: {}\n\n\n",
-                        option.scenario, option.description, schema_text, schema_example
-                    )
-                })
-                .collect::<Vec<_>>()
-                .join("\n");
-
-            let system_prompt = format!(
-                "{preamble}
-                            You have {choices_len} choices to respond, in a JSON format:
-                            {response_options_text}
-                    ",
-                preamble = preamble,
-                choices_len = response_options.len(),
-                response_options_text = response_options_text
-            )
-            .trim()
-            .to_string();
-            system_prompt
-        }
-    }
 }
