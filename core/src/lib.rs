@@ -13,7 +13,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!   let lm = OllamaBuilder::new().try_build().unwrap();
+//!   let lm = OllamaBuilder::new().with_model(ollama_model::PHI3_MINI).try_build().unwrap();
 //!   let executor = TextExecutorBuilder::new().with_lm(&lm).try_build().unwrap();
 //!   let response = executor.execute("What is 2+2?").await.expect("Execution failed");
 //!   println!("{}", response.content);
@@ -29,7 +29,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!   let lm = OllamaBuilder::new().try_build().unwrap();
+//!   let lm = OllamaBuilder::new().with_model(ollama_model::PHI3_MINI).try_build().unwrap();
 //!   let executor = TextExecutorBuilder::new().with_lm(&lm).try_build().unwrap();
 //!   let mut response = executor.execute_stream("What is 2+2?").await.expect("Execution failed");
 //!   while let Some(chunk) = response.stream.next().await {
@@ -78,7 +78,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!   let lm = OllamaBuilder::new().try_build().unwrap();
+//!   let lm = OllamaBuilder::new().with_model(ollama_model::PHI3_MINI).try_build().unwrap();
 //!   let executor = StructuredExecutorBuilder::new()
 //!     .with_lm(&lm)
 //!     .with_preamble("You are a geography expert who helps users understand the capital city of countries around the world.")
@@ -100,7 +100,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!   let lm = OllamaBuilder::new().try_build().unwrap();
+//!   let lm = OllamaBuilder::new().with_embeddings_model(ollama_embedding_model::NOMIC_EMBED_TEXT).try_build().unwrap();
 //!   let executor = TextExecutorBuilder::new()
 //!     .with_lm(&lm)
 //!     .try_build()

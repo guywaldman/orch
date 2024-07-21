@@ -54,7 +54,12 @@ async fn main() {
         }
     };
     let lm: Box<dyn LanguageModel> = match provider {
-        LanguageModelProvider::Ollama => Box::new(OllamaBuilder::new().try_build().unwrap()),
+        LanguageModelProvider::Ollama => Box::new(
+            OllamaBuilder::new()
+                .with_model(ollama_model::PHI3_MINI)
+                .try_build()
+                .unwrap(),
+        ),
         LanguageModelProvider::OpenAi => Box::new(
             OpenAiBuilder::new()
                 .with_api_key(&open_ai_api_key)

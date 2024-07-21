@@ -52,8 +52,8 @@ jobs:
       - name: Install and run ollama
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
-          ollama serve &
           ollama pull phi3:mini
+          ollama pull nomic-embed-text:latest
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
@@ -102,12 +102,6 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
-
-      - name: Install and run ollama
-        run: |
-          systemctl stop ollama
-          curl -fsSL https://ollama.com/install.sh | sh
-          ollama pull phi3:mini
 
       - name: Run rustdoc lints
         uses: actions-rs/cargo@v1
