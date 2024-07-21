@@ -1,5 +1,10 @@
 # Changelog
 
+# Version 0.0.7
+
+- Fixed issue where the `orch` crate was not used for types in the proc macros
+- Fixed issue where multiple fields in a response option would fail the proc macro
+
 # Version 0.0.6
 
 No functional changes.
