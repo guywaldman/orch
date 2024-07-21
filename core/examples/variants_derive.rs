@@ -1,3 +1,7 @@
+//! This example demonstrates how to use the `Variants` derive macro to generate a structured response from the LLM.
+//!
+//! Run like so: `cargo run --example variants_derive`
+
 use orch::response::*;
 
 #[derive(Variants, serde::Deserialize)]

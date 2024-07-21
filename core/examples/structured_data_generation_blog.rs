@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 
 //! This example demonstrates how to use the `Executor` to generate a structured response from the LLM.
+//! 
+//! Run like so: `cargo run --example structured_data_generation_blog -- blog.md`
 
 use orch::execution::*;
 use orch::lm::*;

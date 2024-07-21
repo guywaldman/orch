@@ -1,5 +1,6 @@
 //! This example demonstrates how to use the `Executor` to generate a response from the LLM.
-//! We construct an `Ollama` instance and use it to generate a response.
+//!
+//! Run like so: `cargo run --example text_generation`
 
 use orch::execution::*;
 use orch::lm::*;

@@ -1,5 +1,6 @@
 //! This example demonstrates how to use the `Executor` to generate a streaming response from the LLM.
-//! We construct an `Ollama` instance and use it to generate a streaming response.
+//!
+//! Run like so: `cargo run --example text_generation_stream`
 
 use orch::execution::*;
 use orch::lm::*;

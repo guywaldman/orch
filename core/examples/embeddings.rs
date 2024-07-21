@@ -1,5 +1,6 @@
 //! This example demonstrates how to use the `Executor` to generate embeddings from the language model.
-//! We construct an `Ollama` instance and use it to generate embeddings.
+//!
+//! Run like so: `cargo run --example embeddings`
 
 use orch::execution::*;
 use orch::lm::*;

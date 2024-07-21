@@ -1,12 +1,13 @@
 #![allow(dead_code)]
 //! This example demonstrates how to use the `Executor` to generate a structured response from the LLM.
+//! 
+//! Run like so: `cargo run --example structured_data_generation_capital -- France`
 
 use orch::execution::*;
 use orch::lm::*;
 use orch::response::*;
 
 #[derive(Variants, serde::Deserialize)]
-#[serde(tag = "response_type")]
 pub enum ResponseVariants {
     Answer(AnswerResponseVariant),
     Fail(FailResponseVariant),
