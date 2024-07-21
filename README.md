@@ -20,7 +20,7 @@ Alternatively, add `orch as a dependency to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-orch = "0.0.5"
+orch = "0.0.6"
 ```
 
 # Basic Usage

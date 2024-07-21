@@ -1,5 +1,13 @@
 # Changelog
 
+# Version 0.0.6
+
+No functional changes.
+
+# Version 0.0.5
+
+- Fixed an issue where the proc macros were not exposed directly from `orch`
+
 # Version 0.0.4
 
 No functional changes.
