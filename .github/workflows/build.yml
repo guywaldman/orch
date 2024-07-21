@@ -51,8 +51,8 @@ jobs:
 
       - name: Install and run ollama
         run: |
+          systemctl is-active ollama.service && sudo systemctl stop ollama.service
           curl -fsSL https://ollama.com/install.sh | sh
-          systemctl is-active ollama && sudo systemctl stop ollama
           ollama serve &
           ollama pull phi3:mini
           ollama pull nomic-embed-text:latest
