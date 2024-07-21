@@ -1,7 +1,6 @@
 name: Build
 on:
   push:
-    branches: [main]
     tags: ["[0-9]+.[0-9]+.[0-9]+"]
 
 jobs:
@@ -9,6 +8,10 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
+      - name: Exit if not on main branch
+        if: endsWith(github.ref, 'main') == false
+        run: exit -1
+
       - name: Checkout sources
         uses: actions/checkout@v2
 
