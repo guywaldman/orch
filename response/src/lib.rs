@@ -31,7 +31,6 @@ where
     fn options(&self) -> Vec<ResponseOption>;
 
     fn parse(&self, response: &str) -> Result<T, serde_json::Error> {
-        println!("{}", response);
         serde_json::from_str(response)
     }
 }
