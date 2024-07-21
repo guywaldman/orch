@@ -11,6 +11,9 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
       - name: Get current branch
         id: check_step
         run: |
@@ -22,9 +25,6 @@ jobs:
       - name: Exit if not on main branch
         if: steps.check_step.outputs.branch != 'main'
         run: exit 1
-
-      - name: Checkout sources
-        uses: actions/checkout@v2
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
