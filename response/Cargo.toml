@@ -1,6 +1,6 @@
 [package]
 name = "orch_response"
-version = "0.0.9"
+version = "0.0.10"
 edition = "2021"
 license = "MIT"
 description = "Models for orch Executor responses"
