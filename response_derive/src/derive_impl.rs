@@ -101,11 +101,11 @@ pub(crate) fn derive_impl(input: proc_macro::TokenStream) -> proc_macro::TokenSt
                     description: #description.to_string(),
                     typ: #typ.to_string(),
                     example: #example.to_string(),
-                },
+                }
             })
         }
 
-        let shhema_fields = schema_fields.iter();
+        let schema_fields = schema_fields.iter();
         let ident_str = syn::LitStr::new(&ident.to_string(), ident.span());
         options_vec_pushes.extend(quote! {
             options.push(::orch::response::ResponseOption {
@@ -113,7 +113,7 @@ pub(crate) fn derive_impl(input: proc_macro::TokenStream) -> proc_macro::TokenSt
                 scenario: #scenario.to_string(),
                 description: #description.to_string(),
                 schema: vec![
-                    #(#shhema_fields),*
+                    #(#schema_fields),*
                 ]
             });
         });

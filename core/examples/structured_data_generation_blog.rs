@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! This example demonstrates how to use the `Executor` to generate a structured response from the LLM.
 
 use orch::execution::*;
@@ -15,10 +17,7 @@ pub enum BlogPostReviewerResponseOption {
         description = "Suggestions for improving the blog post",
         example = "[\"You wrote 'excellent' in two consecutive paragraphs in section 'Introduction'\"]"
     )]
-    Answer {
-        #[allow(dead_code)]
-        suggestions: Vec<String>,
-    },
+    Answer { suggestions: Vec<String> },
     #[response(
         scenario = "For some reason you failed to generate suggestions",
         description = "Reason why you failed to generate suggestions"
@@ -28,10 +27,7 @@ pub enum BlogPostReviewerResponseOption {
         description = "Reason why you failed to generate suggestions",
         example = "Content was invalid"
     )]
-    Fail {
-        #[allow(dead_code)]
-        reason: String,
-    },
+    Fail { reason: String },
 }
 
 #[tokio::main]

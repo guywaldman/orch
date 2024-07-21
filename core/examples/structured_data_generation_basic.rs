@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! This example demonstrates how to use the `Executor` to generate a structured response from the LLM.
 
 use orch::execution::*;
@@ -15,10 +16,12 @@ pub enum CapitalCityExecutorResponseOptions {
         description = "Capital city of the received country",
         example = "London"
     )]
-    Answer {
-        #[allow(dead_code)]
-        capital: String,
-    },
+    #[schema(
+        field = "country",
+        description = "Country of the received capital city",
+        example = "United Kingdom"
+    )]
+    Answer { capital: String, country: String },
     #[response(
         scenario = "You don't know the capital city of the country",
         description = "Reason why the capital city is not known"
@@ -28,18 +31,15 @@ pub enum CapitalCityExecutorResponseOptions {
         description = "Reason why the capital city is not known",
         example = "Country 'foobar' does not exist"
     )]
-    Fail {
-        #[allow(dead_code)]
-        reason: String,
-    },
+    Fail { reason: String },
 }
 
 #[tokio::main]
 async fn main() {
     // ! Change this to use a different provider.
-    let provider = LanguageModelProvider::OpenAi;
+    let provider = LanguageModelProvider::Ollama;
 
-    let prompt = "What is the capital of Fooland?";
+    let prompt = "What is the capital of France?";
 
     println!("Prompt: {prompt}");
     println!("---");
@@ -54,12 +54,7 @@ async fn main() {
         }
     };
     let lm: Box<dyn LanguageModel> = match provider {
-        LanguageModelProvider::Ollama => Box::new(
-            OllamaBuilder::new()
-                .with_model(ollama_model::PHI3_MINI)
-                .try_build()
-                .unwrap(),
-        ),
+        LanguageModelProvider::Ollama => Box::new(OllamaBuilder::new().try_build().unwrap()),
         LanguageModelProvider::OpenAi => Box::new(
             OpenAiBuilder::new()
                 .with_api_key(&open_ai_api_key)
