@@ -12,7 +12,7 @@ keywords = ["llm", "openai", "ollama", "rust"]
 proc-macro = true
 
 [dependencies]
-orch_response = { path = "../response" }
+orch_response = { path = "../response", version = "0.0.3" }
 darling = "0.20.10"
 proc-macro2 = "1.0.86"
 quote = "1.0.36"
