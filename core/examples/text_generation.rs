@@ -1,5 +1,5 @@
 //! This example demonstrates how to use the `Executor` to generate a response from the LLM.
-//! We construct an `Ollama` instance and use it to generate a response.
+//! Run like so: `cargo run --example text_generation`
 
 use orch::execution::*;
 use orch::lm::*;
@@ -26,13 +26,13 @@ async fn main() {
     let lm: Box<dyn LanguageModel> = match provider {
         LanguageModelProvider::Ollama => Box::new(
             OllamaBuilder::new()
-                .with_model(ollama_model::PHI3_MINI)
+                .with_model(ollama_model::PHI3_MINI.to_string())
                 .try_build()
                 .unwrap(),
         ),
         LanguageModelProvider::OpenAi => Box::new(
             OpenAiBuilder::new()
-                .with_api_key(&open_ai_api_key)
+                .with_api_key(open_ai_api_key)
                 .try_build()
                 .unwrap(),
         ),

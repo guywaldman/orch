@@ -27,7 +27,7 @@ orch = "*" # Substitute with the latest version
 
 ## Simple Text Generation
 
-```rust
+```rust no_run
 use orch::execution::*;
 use orch::lm::*;
 
@@ -42,7 +42,7 @@ async fn main() {
 
 ## Streaming Text Generation
 
-```rust
+```rust no_run
 use orch::execution::*;
 use orch::lm::*;
 use tokio_stream::StreamExt;
@@ -67,54 +67,74 @@ async fn main() {
 
 ## Structured Data Generation
 
-```rust
+```rust no_run
 use orch::execution::*;
 use orch::lm::*;
-use orch_response_derive::*;
+use orch::response::*;
 
-#[derive(OrchResponseOptions)]
-pub enum CapitalCityExecutorResponseOptions {
-    #[response(
-        scenario = "You know the capital city of the country",
-        description = "Capital city of the country"
-    )]
+#[derive(Variants, serde::Deserialize)]
+pub enum ResponseVariants {
+    Answer(AnswerResponseVariant),
+    Fail(FailResponseVariant),
+}
+
+#[derive(Variant, serde::Deserialize)]
+#[variant(
+    variant = "Answer",
+    scenario = "You know the capital city of the country",
+    description = "Capital city of the country"
+)]
+pub struct AnswerResponseVariant {
     #[schema(
-        field = "capital",
         description = "Capital city of the received country",
         example = "London"
     )]
-    Answer { capital: String },
-    #[response(
-        scenario = "You don't know the capital city of the country",
-        description = "Reason why the capital city is not known"
-    )]
+    pub capital: String,
+}
+
+#[derive(Variant, serde::Deserialize)]
+#[variant(
+    variant = "Fail",
+    scenario = "You don't know the capital city of the country",
+    description = "Reason why the capital city is not known"
+)]
+pub struct FailResponseVariant {
     #[schema(
-        field = "reason",
         description = "Reason why the capital city is not known",
         example = "Country 'foobar' does not exist"
     )]
-    Fail { reason: String },
+    pub reason: String,
 }
 
 #[tokio::main]
 async fn main() {
-  let lm = OllamaBuilder::new().try_build().unwrap();
-  let executor = StructuredExecutorBuilder::new()
+    let lm = OllamaBuilder::new().try_build().unwrap();
+    let executor = StructuredExecutorBuilder::new()
     .with_lm(&lm)
     .with_preamble("You are a geography expert who helps users understand the capital city of countries around the world.")
-    .with_options(&options!(CapitalCityExecutorResponseOptions))
+		.with_options(&variants!(ResponseVariants))
     .try_build()
     .unwrap();
-  let response = executor.execute("What is the capital of Fooland?").await.expect("Execution failed");
+    let response = executor
+        .execute("What is the capital of Fooland?")
+        .await
+        .expect("Execution failed");
 
-  println!("Response:");
-  println!("{:?}", response.content);
+    println!("Response:");
+    match response.content {
+        ResponseVariants::Answer(answer) => {
+            println!("Capital city: {}", answer.capital);
+        }
+        ResponseVariants::Fail(fail) => {
+            println!("Model failed to generate a response: {}", fail.reason);
+        }
+    }
 }
 ```
 
 ## Embedding Generation
 
-```rust
+```rust no_run
 use orch::execution::*;
 use orch::lm::*;
 
@@ -138,7 +158,3 @@ async fn main() {
 ## More Examples
 
 See the [examples](https://github.com/guywaldman/orch/tree/main/core/examples) directory for usage examples.
-
-## Roadmap
-
-- [ ] Agents and tools

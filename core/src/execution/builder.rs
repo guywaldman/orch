@@ -1,4 +1,4 @@
-use orch_response::ResponseOptions;
+use orch_response::OrchResponseVariants;
 use thiserror::Error;
 
 use crate::lm::LanguageModel;
@@ -49,24 +49,18 @@ impl<'a> TextExecutorBuilder<'a> {
 }
 
 #[derive(Default)]
-pub struct StructuredExecutorBuilder<'a, T>
-where
-    T: serde::de::DeserializeOwned + Sized,
-{
+pub struct StructuredExecutorBuilder<'a, T> {
     lm: Option<&'a dyn LanguageModel>,
     preamble: Option<&'a str>,
-    options: Option<&'a dyn ResponseOptions<T>>,
+    variants: Option<&'a dyn OrchResponseVariants<T>>,
 }
 
-impl<'a, T> StructuredExecutorBuilder<'a, T>
-where
-    T: serde::de::DeserializeOwned + Sized,
-{
+impl<'a, T> StructuredExecutorBuilder<'a, T> {
     pub fn new() -> Self {
         Self {
             lm: None,
             preamble: None,
-            options: None,
+            variants: None,
         }
     }
 
@@ -75,8 +69,8 @@ where
         self
     }
 
-    pub fn with_options(mut self, options: &'a dyn ResponseOptions<T>) -> Self {
-        self.options = Some(options);
+    pub fn with_options(mut self, options: &'a dyn OrchResponseVariants<T>) -> Self {
+        self.variants = Some(options);
         self
     }
 
@@ -91,7 +85,7 @@ where
                 "Language model".to_string(),
             ));
         };
-        let Some(response_options) = self.options else {
+        let Some(response_options) = self.variants else {
             return Err(ExecutorBuilderError::ConfigurationNotSet(
                 "Response options".to_string(),
             ));
@@ -99,7 +93,7 @@ where
         Ok(StructuredExecutor {
             lm,
             preamble: self.preamble,
-            response_options,
+            variants: response_options,
         })
     }
 }
