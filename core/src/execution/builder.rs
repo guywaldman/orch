@@ -2,6 +2,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ExecutorBuilderError {
-    #[error("Configuration error: {0} is not set")]
+    #[error("Internal error: {0}")]
+    InternalError(String),
+    #[error("{0} is not set")]
     ConfigurationNotSet(String),
 }

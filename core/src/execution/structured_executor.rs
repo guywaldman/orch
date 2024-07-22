@@ -197,8 +197,8 @@ impl<'a, T> StructuredExecutorBuilder<'a, T> {
             ));
         };
         let Some(response_options) = self.variants else {
-            return Err(ExecutorBuilderError::ConfigurationNotSet(
-                "Response options".to_string(),
+            return Err(ExecutorBuilderError::InternalError(
+                "Response variants are not set".to_string(),
             ));
         };
         Ok(StructuredExecutor {

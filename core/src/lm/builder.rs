@@ -4,7 +4,7 @@ use super::LanguageModel;
 
 #[derive(Debug, Error)]
 pub enum LanguageModelBuilderError {
-    #[error("Configuration error: {0} is not set")]
+    #[error("{0} is not set")]
     ConfigurationNotSet(String),
 }
 

@@ -9,7 +9,7 @@ pub const DEFAULT_RETRIES: usize = 2;
 
 #[derive(Debug, Error)]
 pub enum AlignmentStrategyBuilderError {
-    #[error("Configuration error: {0} is not set")]
+    #[error("{0} is not set")]
     ConfigurationNotSet(String),
 }
 
