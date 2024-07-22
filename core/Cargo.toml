@@ -13,7 +13,6 @@ orch_response = { path = "../response", version = "0.0.12" }
 orch_response_derive = { path = "../response_derive", version = "0.0.12" }
 async-gen = "0.2.3"
 dotenv = "0.15.0"
-dyn-clone = "1.0.17"
 openai-api-rs = "5.0.2"
 reqwest = { version = "0.12.5", features = ["blocking"] }
 serde = { version = "1.0.164", features = ["derive"] }
@@ -22,3 +21,5 @@ thiserror = "1.0.63"
 tokio = { version = "1.28.2", features = ["rt", "macros"] }
 tokio-stream = "0.1.15"
 async-trait = "0.1.81"
+dyn-clone = "1.0.17"
+async-recursion = "1.1.1"

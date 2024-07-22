@@ -1,3 +1,5 @@
+use dyn_clone::DynClone;
+
 /// Represents an option for the response of a language model.
 #[derive(Debug, Clone)]
 pub struct ResponseOption {
@@ -28,7 +30,7 @@ pub trait OrchResponseVariant: Send + Sync {
     fn variant() -> ResponseOption;
 }
 
-pub trait OrchResponseVariants<T>: Send + Sync {
+pub trait OrchResponseVariants<T>: DynClone + Send + Sync {
     fn variants(&self) -> Vec<ResponseOption>;
     fn parse(&self, response: &str) -> Result<T, serde_json::Error>;
 }

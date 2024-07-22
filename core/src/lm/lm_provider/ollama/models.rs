@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 pub mod ollama_model {
-    pub const PHI3_MINI: &str = "phi3:mini";
+    pub const LLAMA3: &str = "llama3:latest";
+    pub const LLAMA3_8B: &str = "llama3:8b";
+    pub const PHI3_MINI: &str = "phi3:latest";
     pub const CODESTRAL: &str = "codestral:latest";
 }
 
@@ -110,9 +112,17 @@ impl Default for OllamaGenerateRequest {
     }
 }
 
+/// Response from the Ollama API for generating a response.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum OllamaGenerateResponse {
+    Success(OllamaGenerateResponseSuccess),
+    Error(OllamaGenerateResponseError),
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[allow(dead_code)]
-pub struct OllamaGenerateResponse {
+pub struct OllamaGenerateResponseSuccess {
     /// Model identifier (e.g., "mistral:latest")
     pub model: String,
 
@@ -130,7 +140,20 @@ pub struct OllamaGenerateResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct OllamaGenerateStreamItemResponse {
+pub struct OllamaGenerateResponseError {
+    /// Error message.
+    pub error: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum OllamaGenerateStreamItemResponse {
+    Success(OllamaGenerateStreamItemResponseSuccess),
+    Error(OllamaGenerateStreamItemResponseError),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OllamaGenerateStreamItemResponseSuccess {
     /// Model identifier (e.g., "mistral:latest")
     pub model: String,
 
@@ -139,6 +162,12 @@ pub struct OllamaGenerateStreamItemResponse {
 
     /// The response to the prompt
     pub response: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OllamaGenerateStreamItemResponseError {
+    /// Error message.
+    pub error: String,
 }
 
 /// Request for generating an embedding from the Ollama API.
