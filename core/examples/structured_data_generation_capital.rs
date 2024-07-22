@@ -77,7 +77,7 @@ async fn main() {
             You are a geography expert who helps users understand the capital city of countries around the world.
             You will receive a country name, and you will need to provide the capital city of that country.
             ")
-        .with_options(&variants!(ResponseVariants))
+        .with_options(Box::new(variants!(ResponseVariants)))
         .try_build()
         .unwrap();
     let response = executor.execute(prompt).await.expect("Execution failed");

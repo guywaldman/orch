@@ -26,9 +26,9 @@ pub enum ExecutorError {
     Alignment(AlignmentError),
 }
 
-impl Into<ExecutorError> for LanguageModelError {
-    fn into(self) -> ExecutorError {
-        match self {
+impl From<LanguageModelError> for ExecutorError {
+    fn from(val: LanguageModelError) -> Self {
+        match val {
             LanguageModelError::Ollama(OllamaError::Api(e)) => ExecutorError::OllamaApi(e),
             e => ExecutorError::LanguageModelError(e),
         }
@@ -74,7 +74,7 @@ pub async fn text_complete<'a>(
     let response = lm
         .text_complete(prompt, system_prompt, options)
         .await
-        .map_err(Into::into)?;
+        .map_err(ExecutorError::from)?;
     Ok(ExecutorTextCompleteResponse {
         content: response.text,
         context: ExecutorContext {},
@@ -85,6 +85,9 @@ pub(crate) async fn generate_embedding<'a>(
     lm: &'a dyn LanguageModel,
     prompt: &str,
 ) -> Result<Vec<f32>, ExecutorError> {
-    let response = lm.generate_embedding(prompt).await.map_err(Into::into)?;
+    let response = lm
+        .generate_embedding(prompt)
+        .await
+        .map_err(ExecutorError::from)?;
     Ok(response)
 }

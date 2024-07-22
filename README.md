@@ -112,7 +112,7 @@ async fn main() {
     let executor = StructuredExecutorBuilder::new()
     .with_lm(&lm)
     .with_preamble("You are a geography expert who helps users understand the capital city of countries around the world.")
-		.with_options(&variants!(ResponseVariants))
+		.with_options(Box::new(variants!(ResponseVariants)))
     .try_build()
     .unwrap();
     let response = executor

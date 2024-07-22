@@ -128,12 +128,10 @@ impl<'a, T> StructuredExecutor<'a, T> {
                 .await
                 .map_err(ExecutorError::Alignment)?;
         }
-        let result = self.variants.parse(&model_response).map_err(|e| {
-            ExecutorError::Parsing(format!(
-                "Error while parsing response: {e}\nResponse: {:?}",
-                model_response
-            ))
-        })?;
+        let result = self
+            .variants
+            .parse(&model_response)
+            .map_err(|e| ExecutorError::Parsing(format!("{e}\nResponse: {:?}", model_response)))?;
         // TODO: Add error correction and handling.
         Ok(ExecutorTextCompleteResponse {
             content: result,

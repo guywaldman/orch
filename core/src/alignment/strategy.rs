@@ -3,7 +3,7 @@ use orch_response_derive::{variants, Variant, Variants};
 use thiserror::Error;
 
 use crate::{
-    execution::{StructuredExecutor, StructuredExecutorBuilder},
+    execution::{ExecutorError, StructuredExecutor, StructuredExecutorBuilder},
     lm::{LanguageModel, LanguageModelError, TextCompleteOptions},
 };
 
@@ -107,6 +107,9 @@ impl AlignmentStrategy {
     const PREAMBLE: &'static str = "
     Your purpose is to receive a response from a language model and make sure (and correct otherwise) whether the response is expected or not.  
     Being \"expected\" means that the response is correct and matches the expected output.
+
+    You should *not* return the response in the schema of the original message, but instead of the schema that you are requested to provide
+    (the one with the response types 'ResponseCorrection', 'SchemaCorrection' and 'NoCorrection').
     ";
 
     /// Aligns the response of the language model.
@@ -132,6 +135,11 @@ impl AlignmentStrategy {
                     &prev_alignment_response,
                 )
                 .await?;
+
+            let Some(response) = response else {
+                // The response may be `None` if the correction deemed that the previous response should be used.
+                continue;
+            };
 
             match &response {
                 AlignmentResponse::NoCorrection(_) => {
@@ -191,7 +199,7 @@ impl AlignmentStrategy {
         original_prompt: &str,
         original_response: &str,
         prev_alignment_response: &Option<AlignmentResponse>,
-    ) -> Result<AlignmentResponse, AlignmentError> {
+    ) -> Result<Option<AlignmentResponse>, AlignmentError> {
         let mut preamble = format!(
             "
             {base_preamble}
@@ -204,6 +212,8 @@ impl AlignmentStrategy {
 
             And the original response:
             {original_response}
+
+            REMEMBER: Return a response in the schema you are requested (the one with the response types 'ResponseCorrection', 'SchemaCorrection' and 'NoCorrection').
     ",
             base_preamble = Self::PREAMBLE,
         );
@@ -252,11 +262,19 @@ impl AlignmentStrategy {
             .with_options(Box::new(variants!(AlignmentResponse)))
             .try_build()
             .unwrap();
-        let response = executor
-            .execute(original_prompt)
-            .await
-            .map_err(|e| AlignmentError::ExecutionFailed(e.to_string()))?;
+        let response = {
+            let correction_response = executor.execute(original_prompt).await;
 
-        Ok(response.content)
+            match correction_response {
+                Ok(response) => Some(response.content),
+                Err(ExecutorError::Parsing(_)) => {
+                    // The model failed to parse the response, so we return the original response.
+                    return Ok(None);
+                }
+                Err(e) => return Err(AlignmentError::ExecutionFailed(e.to_string())),
+            }
+        };
+
+        Ok(response)
     }
 }

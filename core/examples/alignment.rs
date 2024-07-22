@@ -46,7 +46,7 @@ async fn main() {
 
     // We use a smaller model for the correction.
     let ollama_corrector = OllamaBuilder::new()
-        .with_model(ollama_model::PHI3_MINI.to_string())
+        .with_model(ollama_model::LLAMA3_8B.to_string())
         .try_build()
         .unwrap();
 

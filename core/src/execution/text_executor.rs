@@ -18,7 +18,7 @@ impl<'a> Executor<'a> for TextExecutor<'a> {
     }
 
     fn system_prompt(&self) -> String {
-        self.preamble.unwrap_or(&DEFAULT_PREAMBLE).to_owned()
+        self.preamble.unwrap_or(DEFAULT_PREAMBLE).to_owned()
     }
 }
 
