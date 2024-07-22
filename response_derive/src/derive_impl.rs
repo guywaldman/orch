@@ -68,7 +68,24 @@ pub(crate) fn response_variants_derive(input: proc_macro::TokenStream) -> proc_m
 
             fn parse(&self, response: &str) -> Result<#original_enum_ident, ::serde_json::Error> {
                 let dynamic_parsed = serde_json::from_str::<serde_json::Value>(response)?;
-                let response_type = dynamic_parsed.get("response_type").unwrap().as_str().unwrap();
+                let response_type = dynamic_parsed.get("response_type");
+                let response_type = match response_type {
+                    Some(response_type) => match response_type.as_str() {
+                        Some(response_type) => response_type,
+                        None => {
+                            return Err(::serde_json::Error::custom(format!(
+                                "Invalid response type: {}",
+                                response
+                            )));
+                        }
+                    }
+                    None => {
+                        return Err(::serde_json::Error::custom(format!(
+                            "Invalid response type: {}",
+                            response
+                        )));
+                    }
+                };
                 match response_type {
                     #response_type_arms
                     _ => Err(::serde_json::Error::custom("Invalid response type")),
