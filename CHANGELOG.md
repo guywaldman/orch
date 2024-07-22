@@ -1,5 +1,10 @@
 # Changelog
 
+# Version 0.0.12
+
+- Fixed the proc macro for the variants of the response options ([PR #9](https://github.com/guywaldman/orch/pull/9))
+- Added support for "alignment", improved documentation, added examples ([PR #11](https://github.com/guywaldman/orch/pull/11))
+
 # Version 0.0.11
 
 No functional changes.
