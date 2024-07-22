@@ -1,26 +1,38 @@
 use std::pin::Pin;
 
-use orch_response::ResponseOption;
 use thiserror::Error;
 use tokio_stream::Stream;
 
 use crate::{
     alignment::AlignmentError,
-    lm::{LanguageModel, LanguageModelError, TextCompleteOptions},
+    lm::{LanguageModel, LanguageModelError, OllamaError, TextCompleteOptions},
 };
-
-use super::ResponseFormat;
 
 #[derive(Debug, Error)]
 pub enum ExecutorError {
-    #[error("General error: {0}")]
+    #[error("{0}")]
     General(LanguageModelError),
+
+    #[error("{0}")]
+    LanguageModelError(LanguageModelError),
+
+    #[error("Error when calling Ollama API: {0}")]
+    OllamaApi(String),
 
     #[error("Parsing LM response failed: {0}")]
     Parsing(String),
 
     #[error("Alignment error: {0}")]
     Alignment(AlignmentError),
+}
+
+impl Into<ExecutorError> for LanguageModelError {
+    fn into(self) -> ExecutorError {
+        match self {
+            LanguageModelError::Ollama(OllamaError::Api(e)) => ExecutorError::OllamaApi(e),
+            e => ExecutorError::LanguageModelError(e),
+        }
+    }
 }
 
 pub(crate) trait Executor<'a> {
@@ -34,12 +46,6 @@ pub(crate) trait Executor<'a> {
 
     /// System prompt (instructions) for the model.
     fn system_prompt(&self) -> String;
-
-    fn variants(&self) -> Option<Vec<ResponseOption>> {
-        None
-    }
-
-    fn format(&self) -> ResponseFormat;
 
     fn lm(&self) -> &'a dyn LanguageModel;
 }
@@ -68,7 +74,7 @@ pub async fn text_complete<'a>(
     let response = lm
         .text_complete(prompt, system_prompt, options)
         .await
-        .map_err(ExecutorError::General)?;
+        .map_err(Into::into)?;
     Ok(ExecutorTextCompleteResponse {
         content: response.text,
         context: ExecutorContext {},
@@ -79,9 +85,6 @@ pub(crate) async fn generate_embedding<'a>(
     lm: &'a dyn LanguageModel,
     prompt: &str,
 ) -> Result<Vec<f32>, ExecutorError> {
-    let response = lm
-        .generate_embedding(prompt)
-        .await
-        .map_err(ExecutorError::General)?;
+    let response = lm.generate_embedding(prompt).await.map_err(Into::into)?;
     Ok(response)
 }

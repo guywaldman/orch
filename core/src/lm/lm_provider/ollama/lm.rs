@@ -43,10 +43,10 @@ pub enum OllamaError {
     #[error("Unexpected error when parsing response from Ollama. Error: {0}")]
     Parsing(String),
 
-    #[error("Configuration error: {0}")]
+    #[error("{0}")]
     Configuration(String),
 
-    #[error("Serialization error: {0}")]
+    #[error("{0}")]
     Serialization(String),
 
     #[error(
@@ -129,13 +129,21 @@ impl LanguageModel for Ollama {
             .text()
             .await
             .map_err(|e| LanguageModelError::Ollama(OllamaError::Api(e.to_string())))?;
-        let ollama_response: OllamaGenerateResponse = serde_json::from_str(&body)
-            .map_err(|e| LanguageModelError::Ollama(OllamaError::Parsing(e.to_string())))?;
-        let response = TextCompleteResponse {
-            text: ollama_response.response,
-            context: ollama_response.context,
-        };
-        Ok(response)
+        let ollama_response: OllamaGenerateResponse = serde_json::from_str(&body).map_err(|e| {
+            LanguageModelError::Ollama(OllamaError::Parsing(format!(
+                "{}. Received response: {body}",
+                e
+            )))
+        })?;
+        match ollama_response {
+            OllamaGenerateResponse::Success(success_response) => Ok(TextCompleteResponse {
+                text: success_response.response,
+                context: success_response.context,
+            }),
+            OllamaGenerateResponse::Error(error_response) => Err(LanguageModelError::Ollama(
+                OllamaError::Api(format!("{error_response:?}")),
+            )),
+        }
     }
 
     async fn text_complete_stream(
@@ -160,7 +168,14 @@ impl LanguageModel for Ollama {
         let stream = stream.map(|event| {
             let parsed_message = serde_json::from_str::<OllamaGenerateStreamItemResponse>(&event);
             match parsed_message {
-                Ok(message) => Ok(message.response),
+                Ok(message) => match message {
+                    OllamaGenerateStreamItemResponse::Success(success_response) => {
+                        Ok(success_response.response)
+                    }
+                    OllamaGenerateStreamItemResponse::Error(error_response) => Err(
+                        LanguageModelError::Ollama(OllamaError::Api(format!("{error_response:?}"))),
+                    ),
+                },
                 Err(e) => Err(LanguageModelError::Ollama(OllamaError::Parsing(
                     e.to_string(),
                 ))),

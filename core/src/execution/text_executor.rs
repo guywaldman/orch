@@ -2,7 +2,7 @@ use crate::lm::{LanguageModel, TextCompleteStreamOptions};
 
 use super::{
     generate_embedding, Executor, ExecutorBuilderError, ExecutorContext, ExecutorError,
-    ExecutorTextCompleteResponse, ExecutorTextCompleteStreamResponse, ResponseFormat,
+    ExecutorTextCompleteResponse, ExecutorTextCompleteStreamResponse,
 };
 
 pub const DEFAULT_PREAMBLE: &str = "You are a helpful assistant";
@@ -13,10 +13,6 @@ pub struct TextExecutor<'a> {
 }
 
 impl<'a> Executor<'a> for TextExecutor<'a> {
-    fn format(&self) -> ResponseFormat {
-        ResponseFormat::Text
-    }
-
     fn lm(&self) -> &'a dyn LanguageModel {
         self.lm
     }

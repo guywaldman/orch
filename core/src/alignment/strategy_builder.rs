@@ -13,6 +13,7 @@ pub enum AlignmentStrategyBuilderError {
     ConfigurationNotSet(String),
 }
 
+#[derive(Default)]
 pub struct AlignmentStrategyBuilder {
     lm: Option<Box<dyn LanguageModel>>,
     retries: Option<usize>,

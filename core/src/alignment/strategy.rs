@@ -4,13 +4,16 @@ use thiserror::Error;
 
 use crate::{
     execution::{StructuredExecutor, StructuredExecutorBuilder},
-    lm::LanguageModel,
+    lm::{LanguageModel, LanguageModelError, TextCompleteOptions},
 };
 
 #[derive(Debug, Error)]
 pub enum AlignmentError {
     #[error("Execution failed: {0}")]
     ExecutionFailed(String),
+
+    #[error("Language model error: {0}")]
+    LanguageModelError(#[from] LanguageModelError),
 
     #[error("Internal error: {0}")]
     InternalError(String),
@@ -109,13 +112,14 @@ impl AlignmentStrategy {
     /// Aligns the response of the language model.
     /// Tries at least once, and continues according to the [`AlignmentStrategy`]
     /// (e.g., number of retries).
-    pub async fn align_structured(
+    pub async fn align<'a>(
         &self,
+        base_lm: &'a dyn LanguageModel,
         original_preamble: &str,
         original_prompt: &str,
         original_response: &str,
     ) -> Result<String, AlignmentError> {
-        let mut iterated_response = original_response;
+        let mut iterated_response = original_response.to_owned();
         let mut retry_count = 0;
         let mut prev_alignment_response = None;
 
@@ -125,7 +129,7 @@ impl AlignmentStrategy {
                     original_preamble,
                     original_prompt,
                     &iterated_response,
-                    prev_alignment_response,
+                    &prev_alignment_response,
                 )
                 .await?;
 
@@ -135,14 +139,46 @@ impl AlignmentStrategy {
                     return Ok(iterated_response.to_owned());
                 }
                 response => {
-                    // Requires correction.
                     retry_count += 1;
 
                     if retry_count >= self.retries {
                         return Err(AlignmentError::MaxRetriesExceeded(retry_count));
                     }
 
+                    if let AlignmentResponse::Fail(_) = response {
+                        // Failed - simply try again.
+                        continue;
+                    }
+
+                    let correction = match response {
+                        AlignmentResponse::ResponseCorrection(response_correction) => {
+                            response_correction.correction.clone()
+                        }
+                        AlignmentResponse::SchemaCorrection(schema_correction) => {
+                            schema_correction.correction.clone()
+                        }
+                        _ => unreachable!(),
+                    };
+
+                    let correction_prompt = format!("
+                        {original_preamble}
+
+                        NOTE:
+                        You have previously answered this with the following response and was incorrect. Here is the response and the correction, please make sure not to repeat the same mistake:
+                        ORIGINAL RESPONSE: {original_response}
+                        CORRECTION: {correction}
+                        ");
+                    let new_base_model_response = base_lm
+                        .text_complete(
+                            original_prompt,
+                            &correction_prompt,
+                            TextCompleteOptions::default(),
+                        )
+                        .await
+                        .map_err(AlignmentError::LanguageModelError)?;
+
                     prev_alignment_response = Some(response.clone());
+                    iterated_response = new_base_model_response.text;
                 }
             }
         }
@@ -154,7 +190,7 @@ impl AlignmentStrategy {
         original_preamble: &str,
         original_prompt: &str,
         original_response: &str,
-        prev_alignment_response: Option<AlignmentResponse>,
+        prev_alignment_response: &Option<AlignmentResponse>,
     ) -> Result<AlignmentResponse, AlignmentError> {
         let mut preamble = format!(
             "

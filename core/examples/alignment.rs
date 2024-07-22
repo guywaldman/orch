@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use orch::alignment::AlignmentStrategyBuilder;
 use orch::execution::*;
 use orch::lm::*;
 use orch::response::*;
@@ -39,7 +40,7 @@ pub struct FailResponseVariant {
 async fn main() {
     // We use a large foundational model for the main task.
     let ollama_large = OllamaBuilder::new()
-        .with_model(ollama_model::LLAMA3.to_string())
+        .with_model(ollama_model::LLAMA3_8B.to_string())
         .try_build()
         .unwrap();
 
@@ -52,7 +53,7 @@ async fn main() {
     // We define an alignment strategy that uses the correction model.
     let alignment_strategy = AlignmentStrategyBuilder::new()
         .with_retries(2)
-        .with_lm(&ollama_corrector)
+        .with_lm(Box::new(ollama_corrector))
         .try_build()
         .unwrap();
 
@@ -62,8 +63,8 @@ async fn main() {
 		You are a mathematician who helps users understand the result of mathematical expressions.
 		You will receive a mathematical expression, and you will need to provide the result of that expression.
 	")
-	.with_options(&variants!(ResponseVariants))
-    .with_alignment_strategy(alignment_strategy)
+	.with_options(Box::new(variants!(ResponseVariants)))
+    .with_alignment(alignment_strategy)
 	.try_build()
 	.unwrap();
     let response = executor.execute("2 + 2").await.expect("Execution failed");

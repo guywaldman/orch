@@ -1,12 +1,12 @@
 use std::cell::OnceCell;
 
-use orch_response::{OrchResponseVariants, ResponseOption, ResponseSchemaField};
+use orch_response::{OrchResponseVariants, ResponseSchemaField};
 
 use crate::{alignment::AlignmentStrategy, lm::LanguageModel};
 
 use super::{
     generate_embedding, Executor, ExecutorBuilderError, ExecutorContext, ExecutorError,
-    ExecutorTextCompleteResponse, ResponseFormat,
+    ExecutorTextCompleteResponse, DEFAULT_PREAMBLE,
 };
 
 pub struct StructuredExecutor<'a, T> {
@@ -17,14 +17,6 @@ pub struct StructuredExecutor<'a, T> {
 }
 
 impl<'a, T> Executor<'a> for StructuredExecutor<'a, T> {
-    fn format(&self) -> ResponseFormat {
-        ResponseFormat::Json
-    }
-
-    fn variants(&self) -> Option<Vec<ResponseOption>> {
-        Some(self.variants.variants())
-    }
-
     fn lm(&self) -> &'a dyn LanguageModel {
         self.lm
     }
@@ -127,7 +119,12 @@ impl<'a, T> StructuredExecutor<'a, T> {
         let mut model_response = self.text_complete(prompt).await?.content;
         if let Some(alignment_strategy) = &self.alignment_strategy {
             model_response = alignment_strategy
-                .align_structured(&self.system_prompt(), prompt, &model_response)
+                .align(
+                    self.lm,
+                    self.preamble.unwrap_or(DEFAULT_PREAMBLE),
+                    prompt,
+                    &model_response,
+                )
                 .await
                 .map_err(ExecutorError::Alignment)?;
         }
