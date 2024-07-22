@@ -14,6 +14,7 @@ It was primarily built for usage in [magic-cli](https://github.com/guywaldman/ma
 
 ```shell
 cargo add orch
+cago add orch_response
 ```
 
 Alternatively, add `orch as a dependency to your `Cargo.toml` file:
@@ -21,6 +22,7 @@ Alternatively, add `orch as a dependency to your `Cargo.toml` file:
 ```toml
 [dependencies]
 orch = "*" # Substitute with the latest version
+orch_response = "*" # Substitute with the latest version
 ```
 
 # Basic Usage
