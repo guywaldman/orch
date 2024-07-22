@@ -92,7 +92,7 @@ async fn main() {
 
             Be very specific and refer to specific sentences, paragraph and sections of the blog post.
         ")
-        .with_options(&variants!(ResponseVariants))
+        .with_options(Box::new(variants!(ResponseVariants)))
         .try_build()
         .unwrap();
     let response = executor.execute(&prompt).await.expect("Execution failed");

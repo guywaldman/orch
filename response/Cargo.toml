@@ -9,5 +9,6 @@ repository = "https://github.com/guywaldman/orch"
 keywords = ["llm", "openai", "ollama", "rust"]
 
 [dependencies]
+dyn-clone = "1.0.17"
 serde = "1.0.204"
 serde_json = "1.0.120"

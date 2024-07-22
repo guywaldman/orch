@@ -30,9 +30,6 @@ pub enum OpenAiError {
     #[error("Unexpected response from API. Error: {0}")]
     Api(String),
 
-    #[error("Unexpected error when parsing response from OpenAi. Error: {0}")]
-    Parsing(String),
-
     #[error("Configuration error: {0}")]
     Configuration(String),
 
