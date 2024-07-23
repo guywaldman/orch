@@ -72,16 +72,10 @@ impl LanguageModelBuilder<OpenAi> for OpenAiBuilder {
                 "Embeddings model".to_string(),
             ));
         };
-        let Some(embedding_dimensions) = self.embedding_dimensions else {
-            return Err(LanguageModelBuilderError::ConfigurationNotSet(
-                "Embedding dimensions".to_string(),
-            ));
-        };
         Ok(OpenAi {
             api_key: api_key.to_owned(),
             model: model.to_owned(),
             embeddings_model: embeddings_model.to_owned(),
-            embedding_dimensions,
         })
     }
 }

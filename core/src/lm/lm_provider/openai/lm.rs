@@ -22,7 +22,6 @@ pub struct OpenAi {
     pub api_key: String,
     pub model: String,
     pub embeddings_model: String,
-    pub embedding_dimensions: usize,
 }
 
 #[derive(Error, Debug)]
@@ -112,7 +111,7 @@ impl LanguageModel for OpenAi {
             .embedding(EmbeddingRequest {
                 model: self.embeddings_model.to_owned(),
                 input: prompt.to_owned(),
-                dimensions: Some(self.embedding_dimensions as i32),
+                dimensions: None,
                 user: None,
             })
             .await
