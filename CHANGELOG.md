@@ -1,5 +1,9 @@
 # Changelog
 
+# Version 0.0.15
+
+- Removed dimensions from the OpenAI embedding model (no such requirements, compared to Ollama)
+
 # Version 0.0.14
 
 - Added `LangaugeModelProvider::is_local` method
