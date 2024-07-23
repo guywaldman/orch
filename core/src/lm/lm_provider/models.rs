@@ -12,6 +12,16 @@ pub enum LanguageModelProvider {
     OpenAi,
 }
 
+impl LanguageModelProvider {
+    /// Returns whether the provider runs local inference or not.
+    pub fn is_local(&self) -> bool {
+        match self {
+            LanguageModelProvider::Ollama => false,
+            LanguageModelProvider::OpenAi => true,
+        }
+    }
+}
+
 pub enum OrchLanguageModel {
     Ollama(Ollama),
     OpenAi(OpenAi),
