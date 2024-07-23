@@ -1,5 +1,13 @@
 # Changelog
 
+# Version 0.0.14
+
+- Added `LangaugeModelProvider::is_local` method
+
+# Version 0.0.13
+
+No functional changes.
+
 # Version 0.0.12
 
 - Fixed the proc macro for the variants of the response options ([PR #9](https://github.com/guywaldman/orch/pull/9))
