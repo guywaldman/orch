@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::lm::LanguageModel;
+use crate::lm::{LanguageModel, LanguageModelProviderError};
 
 use super::{Anthropic, Ollama, OpenAi};
 
@@ -12,6 +12,19 @@ pub enum LanguageModelProvider {
     OpenAi,
     #[serde(rename = "anthropic")]
     Anthropic,
+}
+
+impl TryFrom<&str> for LanguageModelProvider {
+    type Error = LanguageModelProviderError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(match value {
+            "ollama" => LanguageModelProvider::Ollama,
+            "openai" => LanguageModelProvider::OpenAi,
+            "anthropic" => LanguageModelProvider::Anthropic,
+            _ => return Err(LanguageModelProviderError::InvalidValue(value.to_string())),
+        })
+    }
 }
 
 impl LanguageModelProvider {

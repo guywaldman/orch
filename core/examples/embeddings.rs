@@ -5,14 +5,15 @@ mod example_utils;
 use example_utils::get_lm;
 
 use orch::execution::*;
-use orch::lm::*;
-
-// ! Change this to use a different provider.
-pub const PROVIDER: LanguageModelProvider = LanguageModelProvider::Ollama;
 
 #[tokio::main]
 async fn main() {
-    let lm = get_lm(PROVIDER);
+    let lm = get_lm(
+        std::env::args()
+            .nth(1)
+            .unwrap_or("ollama".to_owned())
+            .as_str(),
+    );
 
     let text = "Lorem ipsum";
 

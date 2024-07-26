@@ -24,18 +24,6 @@ impl Default for LanguageModelProvider {
     }
 }
 
-impl TryFrom<&str> for LanguageModelProvider {
-    type Error = LanguageModelProviderError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value {
-            "ollama" => Ok(LanguageModelProvider::Ollama),
-            "openai" => Ok(LanguageModelProvider::OpenAi),
-            _ => Err(LanguageModelProviderError::InvalidValue(value.to_string())),
-        }
-    }
-}
-
 #[derive(Debug, Error)]
 pub enum LanguageModelError {
     #[error("Text generation error: {0}")]

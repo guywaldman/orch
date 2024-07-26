@@ -3,7 +3,10 @@ use orch::lm::{
     OpenAiBuilder,
 };
 
-pub fn get_lm(provider: LanguageModelProvider) -> Box<dyn LanguageModel> {
+pub fn get_lm(provider_name: &str) -> Box<dyn LanguageModel> {
+    let provider = LanguageModelProvider::try_from(provider_name)
+        .expect("Invalid provider name. Supported values: 'ollama', 'openai', 'anthropic'");
+
     let open_ai_api_key = {
         if provider == LanguageModelProvider::OpenAi {
             std::env::var("OPENAI_API_KEY")

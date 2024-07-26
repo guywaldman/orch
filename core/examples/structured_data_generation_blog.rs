@@ -4,14 +4,10 @@
 #![allow(dead_code)]
 
 use orch::execution::*;
-use orch::lm::*;
 use orch::response::*;
 
 mod example_utils;
 use example_utils::get_lm;
-
-// ! Change this to use a different provider.
-pub const PROVIDER: LanguageModelProvider = LanguageModelProvider::Ollama;
 
 #[derive(Variants, serde::Deserialize)]
 #[serde(tag = "response_type")]
@@ -50,7 +46,12 @@ pub struct FailResponseVariant {
 
 #[tokio::main]
 async fn main() {
-    let lm = get_lm(PROVIDER);
+    let lm = get_lm(
+        std::env::args()
+            .nth(1)
+            .unwrap_or("ollama".to_owned())
+            .as_str(),
+    );
 
     let args = std::env::args().collect::<Vec<_>>();
     let blog_file_path = args.get(1).unwrap_or_else(|| {
