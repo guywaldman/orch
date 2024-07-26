@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 pub mod ollama_model {
     pub const LLAMA3: &str = "llama3:latest";
     pub const LLAMA3_8B: &str = "llama3:8b";
+    pub const LLAMA3_1_8B: &str = "llama3.1:8b";
     pub const PHI3_MINI: &str = "phi3:latest";
     pub const CODESTRAL: &str = "codestral:latest";
 }
