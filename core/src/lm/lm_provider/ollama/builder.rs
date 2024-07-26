@@ -13,22 +13,24 @@ pub enum OllamaBuilderError {
 
 /// Builds an [`Ollama`] instance.
 pub struct OllamaBuilder {
-    /// Base URL for the Ollama API. Defaults to [`config::DEFAULT_BASE_URL`].
+    /// Base URL for the Ollama API. Defaults to [`DEFAULT_BASE_URL`].
     base_url: Option<String>,
-    /// Model to use for text completion. Defaults to [`config::DEFAULT_MODEL`].
+    /// Model to use for text completion. Defaults to [`DEFAULT_MODEL`].
     model: Option<String>,
-    /// Model to use for embedding generation. Defaults to [`config::DEFAULT_EMBEDDINGS_MODEL`].
+    /// Model to use for embedding generation. Defaults to [`DEFAULT_EMBEDDINGS_MODEL`].
     embeddings_model: Option<String>,
 }
 
 impl OllamaBuilder {
     /// Overrides the default base URL for the Ollama API.
-    /// Defaults to
+    /// Defaults to [`DEFAULT_BASE_URL`].
     pub fn with_base_url(mut self, base_url: String) -> Self {
         self.base_url = Some(base_url);
         self
     }
 
+    /// Overrides the default model to use for text completion.
+    /// Defaults to [`DEFAULT_MODEL`].
     pub fn with_model(mut self, model: String) -> Self {
         self.model = Some(model);
         self

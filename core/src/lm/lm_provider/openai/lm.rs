@@ -36,9 +36,7 @@ pub enum OpenAiError {
     #[error("Serialization error: {0}")]
     Serialization(String),
 
-    #[error(
-        "OpenAi API is not available. Please check if OpenAi is running in the specified port. Error: {0}"
-    )]
+    #[error("OpenAI API is not available. Error: {0}")]
     ApiUnavailable(String),
 }
 
