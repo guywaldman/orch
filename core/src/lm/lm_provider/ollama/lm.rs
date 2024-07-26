@@ -5,7 +5,7 @@ use lm::{
         TextCompleteOptions, TextCompleteResponse, TextCompleteStreamOptions,
         TextCompleteStreamResponse,
     },
-    ollama_embedding_model, ollama_model, LanguageModel, LanguageModelProvider,
+    LanguageModel, LanguageModelProvider,
 };
 use net::SseClient;
 use thiserror::Error;
@@ -23,16 +23,6 @@ pub struct Ollama {
     pub base_url: String,
     pub model: String,
     pub embeddings_model: String,
-}
-
-impl Default for Ollama {
-    fn default() -> Self {
-        Self {
-            base_url: "http://localhost:11434".to_string(),
-            model: ollama_model::CODESTRAL.to_string(),
-            embeddings_model: ollama_embedding_model::NOMIC_EMBED_TEXT.to_string(),
-        }
-    }
 }
 
 #[derive(Error, Debug)]

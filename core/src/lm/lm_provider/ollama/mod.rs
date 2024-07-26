@@ -1,3 +1,4 @@
+mod config;
 mod builder;
 mod lm;
 mod models;
