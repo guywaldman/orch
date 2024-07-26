@@ -11,6 +11,7 @@ pub enum OpenAiBuilderError {
 }
 
 pub struct OpenAiBuilder {
+    api_endpoint: Option<String>,
     api_key: Option<String>,
     model: Option<String>,
     embeddings_model: Option<String>,
@@ -20,6 +21,11 @@ pub struct OpenAiBuilder {
 impl OpenAiBuilder {
     pub fn with_api_key(mut self, api_key: String) -> Self {
         self.api_key = Some(api_key);
+        self
+    }
+
+    pub fn with_api_endpoint(mut self, api_endpoint: String) -> Self {
+        self.api_endpoint = Some(api_endpoint);
         self
     }
 
@@ -50,6 +56,7 @@ impl LanguageModelBuilder<OpenAi> for OpenAiBuilder {
     fn new() -> Self {
         Self {
             api_key: None,
+            api_endpoint: None,
             model: Some(openai_model::GPT_4O_MINI.to_string()),
             embeddings_model: Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002.to_string()),
             embedding_dimensions: Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002_DIMENSIONS),
@@ -73,6 +80,7 @@ impl LanguageModelBuilder<OpenAi> for OpenAiBuilder {
             ));
         };
         Ok(OpenAi {
+            api_endpoint: self.api_endpoint,
             api_key: api_key.to_owned(),
             model: model.to_owned(),
             embeddings_model: embeddings_model.to_owned(),
