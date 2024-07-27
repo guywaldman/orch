@@ -1,5 +1,12 @@
 # Changelog
 
+# Version 0.0.16
+
+- Added ability to configure the OpenAI API endpoint
+- Added support for Anthropic models
+- Fixed issue with `is_local` producing the incorrect result
+- Improved examples for the `orch` crate
+
 # Version 0.0.15
 
 - Removed dimensions from the OpenAI embedding model (no such requirements, compared to Ollama)
