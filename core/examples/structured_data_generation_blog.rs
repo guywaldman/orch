@@ -3,6 +3,7 @@
 
 #![allow(dead_code)]
 
+use orch::alignment::AlignmentStrategyBuilder;
 use orch::execution::*;
 use orch::response::*;
 
@@ -48,6 +49,17 @@ pub struct FailResponseVariant {
 async fn main() {
     let (lm, _) = get_lm();
 
+    // In this example, we use the same LLM for the correction as for the main task.
+    // This could be replaced by a smaller LM.
+    let (corrector_lm, _) = get_lm();
+
+    // We define an alignment strategy that uses the correction model.
+    let alignment_strategy = AlignmentStrategyBuilder::new()
+        .with_retries(2)
+        .with_lm(&*corrector_lm)
+        .try_build()
+        .unwrap();
+
     // Mock blog post
     let prompt = "
         This is a blog post about the importance of blogging.
@@ -70,6 +82,7 @@ async fn main() {
             Be very specific and refer to specific sentences, paragraph and sections of the blog post.
         ")
         .with_options(Box::new(variants!(ResponseVariants)))
+        .with_alignment(alignment_strategy)
         .try_build()
         .unwrap();
     let response = executor.execute(prompt).await.expect("Execution failed");
