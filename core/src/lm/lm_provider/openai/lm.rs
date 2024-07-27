@@ -19,6 +19,7 @@ use crate::*;
 
 #[derive(Debug, Clone)]
 pub struct OpenAi {
+    pub api_endpoint: Option<String>,
     pub api_key: String,
     pub model: String,
     pub embeddings_model: String,
@@ -35,9 +36,7 @@ pub enum OpenAiError {
     #[error("Serialization error: {0}")]
     Serialization(String),
 
-    #[error(
-        "OpenAi API is not available. Please check if OpenAi is running in the specified port. Error: {0}"
-    )]
+    #[error("OpenAI API is not available. Error: {0}")]
     ApiUnavailable(String),
 }
 
@@ -49,7 +48,11 @@ impl LanguageModel for OpenAi {
         system_prompt: &str,
         _options: TextCompleteOptions,
     ) -> Result<TextCompleteResponse, LanguageModelError> {
-        let client = OpenAIClient::new(self.api_key.to_owned());
+        let mut client = OpenAIClient::new(self.api_key.to_owned());
+
+        if let Some(api_endpoint) = self.api_endpoint.clone() {
+            client.api_endpoint = api_endpoint;
+        }
 
         let messages = vec![
             chat_completion::ChatCompletionMessage {

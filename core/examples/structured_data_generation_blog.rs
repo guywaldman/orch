@@ -3,9 +3,12 @@
 
 #![allow(dead_code)]
 
+use orch::alignment::AlignmentStrategyBuilder;
 use orch::execution::*;
-use orch::lm::*;
 use orch::response::*;
+
+mod example_utils;
+use example_utils::get_lm;
 
 #[derive(Variants, serde::Deserialize)]
 #[serde(tag = "response_type")]
@@ -44,41 +47,27 @@ pub struct FailResponseVariant {
 
 #[tokio::main]
 async fn main() {
-    // ! Change this to use a different provider.
-    let provider = LanguageModelProvider::OpenAi;
+    let (lm, _) = get_lm();
 
-    let args = std::env::args().collect::<Vec<_>>();
-    let blog_file_path = args.get(1).unwrap_or_else(|| {
-        eprintln!("ERROR: Please provide a path to a blog file");
-        std::process::exit(1);
-    });
-    let prompt = std::fs::read_to_string(blog_file_path).expect("Failed to read blog file");
+    // In this example, we use the same LLM for the correction as for the main task.
+    // This could be replaced by a smaller LM.
+    let (corrector_lm, _) = get_lm();
 
-    println!("Analyzing blog post at path '{blog_file_path}'...");
+    // We define an alignment strategy that uses the correction model.
+    let alignment_strategy = AlignmentStrategyBuilder::new()
+        .with_retries(2)
+        .with_lm(&*corrector_lm)
+        .try_build()
+        .unwrap();
 
-    // Use a different language model, per the `provider` variable (feel free to change it).
-    let open_ai_api_key = {
-        if provider == LanguageModelProvider::OpenAi {
-            std::env::var("OPENAI_API_KEY")
-                .unwrap_or_else(|_| panic!("OPENAI_API_KEY environment variable not set"))
-        } else {
-            String::new()
-        }
-    };
-    let lm: Box<dyn LanguageModel> = match provider {
-        LanguageModelProvider::Ollama => Box::new(
-            OllamaBuilder::new()
-                .with_model(ollama_model::PHI3_MINI.to_string())
-                .try_build()
-                .unwrap(),
-        ),
-        LanguageModelProvider::OpenAi => Box::new(
-            OpenAiBuilder::new()
-                .with_api_key(open_ai_api_key)
-                .try_build()
-                .unwrap(),
-        ),
-    };
+    // Mock blog post
+    let prompt = "
+        This is a blog post about the importance of blogging.
+
+        # Introduction
+
+        Blogging is a crucial skill for any writer. It allows you to share your thoughts and ideas with others, and it can help you build a following and establish yourself as an expert in your field.
+    ";
 
     let executor = StructuredExecutorBuilder::new()
         .with_lm(&*lm)
@@ -93,19 +82,23 @@ async fn main() {
             Be very specific and refer to specific sentences, paragraph and sections of the blog post.
         ")
         .with_options(Box::new(variants!(ResponseVariants)))
+        .with_alignment(alignment_strategy)
         .try_build()
         .unwrap();
-    let response = executor.execute(&prompt).await.expect("Execution failed");
+    let response = executor.execute(prompt).await.expect("Execution failed");
 
     match response.content {
         ResponseVariants::Answer(answer) => {
+            assert!(!answer.suggestions.is_empty());
+
             println!("Suggestions for improving the blog post:");
             for suggestion in answer.suggestions {
                 println!("- {}", suggestion);
             }
         }
         ResponseVariants::Fail(fail) => {
-            println!("Model failed to generate a response: {}", fail.reason);
+            eprintln!("Model failed to generate a response: {}", fail.reason);
+            std::process::exit(1);
         }
     }
 }

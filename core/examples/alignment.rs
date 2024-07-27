@@ -2,8 +2,10 @@
 
 use orch::alignment::AlignmentStrategyBuilder;
 use orch::execution::*;
-use orch::lm::*;
 use orch::response::*;
+
+mod example_utils;
+use example_utils::get_lm;
 
 #[derive(Variants, serde::Deserialize)]
 pub enum ResponseVariants {
@@ -38,27 +40,20 @@ pub struct FailResponseVariant {
 
 #[tokio::main]
 async fn main() {
-    // We use a large foundational model for the main task.
-    let ollama_large = OllamaBuilder::new()
-        .with_model(ollama_model::LLAMA3_8B.to_string())
-        .try_build()
-        .unwrap();
-
-    // We use a smaller model for the correction.
-    let ollama_corrector = OllamaBuilder::new()
-        .with_model(ollama_model::LLAMA3_8B.to_string())
-        .try_build()
-        .unwrap();
+    let (lm, _) = get_lm();
+    // In this example, we use the same LLM for the correction as for the main task.
+    // This could be replaced by a smaller LM.
+    let (corrector_lm, _) = get_lm();
 
     // We define an alignment strategy that uses the correction model.
     let alignment_strategy = AlignmentStrategyBuilder::new()
         .with_retries(2)
-        .with_lm(Box::new(ollama_corrector))
+        .with_lm(&*corrector_lm)
         .try_build()
         .unwrap();
 
     let executor = StructuredExecutorBuilder::new()
-	.with_lm(&ollama_large)
+	.with_lm(&*lm)
 	.with_preamble("
 		You are a mathematician who helps users understand the result of mathematical expressions.
 		You will receive a mathematical expression, and you will need to provide the result of that expression.

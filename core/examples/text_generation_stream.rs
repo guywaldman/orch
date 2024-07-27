@@ -1,43 +1,25 @@
 //! This example demonstrates how to use the `Executor` to generate a streaming response from the LLM.
 //! Run like so: `cargo run --example text_generation_stream`
 
-use orch::execution::*;
-use orch::lm::*;
+use orch::{execution::*, lm::LanguageModelProvider};
 use tokio_stream::StreamExt;
+
+mod example_utils;
+use example_utils::get_lm;
 
 #[tokio::main]
 async fn main() {
-    // ! Change this to use a different provider.
-    let provider = LanguageModelProvider::Ollama;
+    let (lm, provider) = get_lm();
+
+    if provider == LanguageModelProvider::Anthropic {
+        println!("Streaming is not currently supported for Anthropic. Skipping example.");
+        return;
+    }
 
     let prompt = "What is 2+2?";
 
     println!("Prompt: {prompt}");
     println!("---");
-
-    // Use a different language model, per the `provider` variable (feel free to change it).
-    let open_ai_api_key = {
-        if provider == LanguageModelProvider::OpenAi {
-            std::env::var("OPENAI_API_KEY")
-                .unwrap_or_else(|_| panic!("OPENAI_API_KEY environment variable not set"))
-        } else {
-            String::new()
-        }
-    };
-    let lm: Box<dyn LanguageModel> = match provider {
-        LanguageModelProvider::Ollama => Box::new(
-            OllamaBuilder::new()
-                .with_model(ollama_model::PHI3_MINI.to_string())
-                .try_build()
-                .unwrap(),
-        ),
-        LanguageModelProvider::OpenAi => Box::new(
-            OpenAiBuilder::new()
-                .with_api_key(open_ai_api_key)
-                .try_build()
-                .unwrap(),
-        ),
-    };
 
     let executor = TextExecutorBuilder::new()
         .with_lm(&*lm)
@@ -48,10 +30,14 @@ async fn main() {
         .await
         .expect("Execution failed");
 
+    let mut response_text = String::new();
     println!("Response:");
     while let Some(chunk) = response.stream.next().await {
         match chunk {
-            Ok(chunk) => print!("{chunk}"),
+            Ok(chunk) => {
+                print!("{chunk}");
+                response_text.push_str(&chunk);
+            }
             Err(e) => {
                 println!("Error: {e}");
                 break;
@@ -59,4 +45,6 @@ async fn main() {
         }
     }
     println!();
+
+    assert!(!response_text.is_empty());
 }

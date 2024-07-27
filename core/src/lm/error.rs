@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use super::{LanguageModelProvider, OllamaError, OpenAiError};
+use super::{AnthropicError, LanguageModelProvider, OllamaError, OpenAiError};
 
 #[derive(Debug, Error)]
 pub enum LanguageModelProviderError {
@@ -13,6 +13,7 @@ impl std::fmt::Display for LanguageModelProvider {
         match self {
             LanguageModelProvider::Ollama => write!(f, "ollama"),
             LanguageModelProvider::OpenAi => write!(f, "openai"),
+            LanguageModelProvider::Anthropic => write!(f, "anthropic"),
         }
     }
 }
@@ -23,22 +24,13 @@ impl Default for LanguageModelProvider {
     }
 }
 
-impl TryFrom<&str> for LanguageModelProvider {
-    type Error = LanguageModelProviderError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value {
-            "ollama" => Ok(LanguageModelProvider::Ollama),
-            "openai" => Ok(LanguageModelProvider::OpenAi),
-            _ => Err(LanguageModelProviderError::InvalidValue(value.to_string())),
-        }
-    }
-}
-
 #[derive(Debug, Error)]
 pub enum LanguageModelError {
     #[error("Text generation error: {0}")]
     TextGeneration(String),
+
+    #[error("Feature unsupported: {0}")]
+    UnsupportedFeature(String),
 
     #[error("Embedding generation error: {0}")]
     EmbeddingGeneration(String),
@@ -51,4 +43,7 @@ pub enum LanguageModelError {
 
     #[error("OpenAI error: {0}")]
     OpenAi(#[from] OpenAiError),
+
+    #[error("Anthropic error: {0}")]
+    Anthropic(#[from] AnthropicError),
 }

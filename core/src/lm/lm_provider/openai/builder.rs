@@ -1,8 +1,8 @@
 use thiserror::Error;
 
-use crate::lm::{LanguageModelBuilder, LanguageModelBuilderError};
+use crate::lm::{lm_provider::openai::config, LanguageModelBuilder, LanguageModelBuilderError};
 
-use super::{openai_embedding_model, openai_model, OpenAi};
+use super::OpenAi;
 
 #[derive(Debug, Error)]
 pub enum OpenAiBuilderError {
@@ -10,38 +10,36 @@ pub enum OpenAiBuilderError {
     ConfigurationNotSet(String),
 }
 
+/// Builds an [`OpenAi`] instance.
 pub struct OpenAiBuilder {
+    api_endpoint: Option<String>,
     api_key: Option<String>,
     model: Option<String>,
     embeddings_model: Option<String>,
-    embedding_dimensions: Option<usize>,
 }
 
 impl OpenAiBuilder {
+    /// Sets the required API key for the OpenAI API.
     pub fn with_api_key(mut self, api_key: String) -> Self {
         self.api_key = Some(api_key);
         self
     }
 
+    /// Overrides the default API endpoint for the OpenAI API.
+    pub fn with_api_endpoint(mut self, api_endpoint: String) -> Self {
+        self.api_endpoint = Some(api_endpoint);
+        self
+    }
+
+    /// Sets the model to use for text completion. Defaults to [`config::DEFAULT_MODEL`].
     pub fn with_model(mut self, model: String) -> Self {
         self.model = Some(model);
         self
     }
 
+    /// Sets the model to use for embedding generation. Defaults to [`config::DEFAULT_EMBEDDINGS_MODEL`].
     pub fn with_embeddings_model(mut self, embeddings_model: String) -> Self {
         self.embeddings_model = Some(embeddings_model.clone());
-        self.embedding_dimensions = match embeddings_model.as_ref() {
-            openai_embedding_model::TEXT_EMBEDDING_ADA_002 => {
-                Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002_DIMENSIONS)
-            }
-            openai_embedding_model::TEXT_EMBEDDING_3_SMALL => {
-                Some(openai_embedding_model::TEXT_EMBEDDING_3_SMALL_DIMENSIONS)
-            }
-            openai_embedding_model::TEXT_EMBEDDING_3_LARGE => {
-                Some(openai_embedding_model::TEXT_EMBEDDING_3_LARGE_DIMENSIONS)
-            }
-            _ => None,
-        };
         self
     }
 }
@@ -50,12 +48,13 @@ impl LanguageModelBuilder<OpenAi> for OpenAiBuilder {
     fn new() -> Self {
         Self {
             api_key: None,
-            model: Some(openai_model::GPT_4O_MINI.to_string()),
-            embeddings_model: Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002.to_string()),
-            embedding_dimensions: Some(openai_embedding_model::TEXT_EMBEDDING_ADA_002_DIMENSIONS),
+            api_endpoint: None,
+            model: Some(config::DEFAULT_MODEL.to_string()),
+            embeddings_model: Some(config::DEFAULT_EMBEDDINGS_MODEL.to_string()),
         }
     }
 
+    /// Tries to build an [`OpenAi`] instance. May fail if the required configurations are not set.
     fn try_build(self) -> Result<OpenAi, LanguageModelBuilderError> {
         let Some(api_key) = self.api_key else {
             return Err(LanguageModelBuilderError::ConfigurationNotSet(
@@ -73,6 +72,7 @@ impl LanguageModelBuilder<OpenAi> for OpenAiBuilder {
             ));
         };
         Ok(OpenAi {
+            api_endpoint: self.api_endpoint,
             api_key: api_key.to_owned(),
             model: model.to_owned(),
             embeddings_model: embeddings_model.to_owned(),

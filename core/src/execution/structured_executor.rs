@@ -13,7 +13,7 @@ pub struct StructuredExecutor<'a, T> {
     pub(crate) lm: &'a dyn LanguageModel,
     pub(crate) preamble: Option<&'a str>,
     pub(crate) variants: Box<dyn OrchResponseVariants<T>>,
-    pub(crate) alignment_strategy: Option<AlignmentStrategy>,
+    pub(crate) alignment_strategy: Option<AlignmentStrategy<'a>>,
 }
 
 impl<'a, T> Executor<'a> for StructuredExecutor<'a, T> {
@@ -157,7 +157,7 @@ pub struct StructuredExecutorBuilder<'a, T> {
     lm: Option<&'a dyn LanguageModel>,
     preamble: Option<&'a str>,
     variants: Option<Box<dyn OrchResponseVariants<T>>>,
-    alignment_strategy: Option<AlignmentStrategy>,
+    alignment_strategy: Option<AlignmentStrategy<'a>>,
 }
 
 impl<'a, T> StructuredExecutorBuilder<'a, T> {
@@ -185,7 +185,7 @@ impl<'a, T> StructuredExecutorBuilder<'a, T> {
         self
     }
 
-    pub fn with_alignment(mut self, strategy: AlignmentStrategy) -> Self {
+    pub fn with_alignment(mut self, strategy: AlignmentStrategy<'a>) -> Self {
         self.alignment_strategy = Some(strategy);
         self
     }

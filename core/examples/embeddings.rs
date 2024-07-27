@@ -1,42 +1,24 @@
 //! This example demonstrates how to use the `Executor` to generate embeddings from the language model.
 //! Run like so: `cargo run --example embeddings`
 
-use orch::execution::*;
-use orch::lm::*;
+mod example_utils;
+use example_utils::get_lm;
+
+use orch::{execution::*, lm::LanguageModelProvider};
 
 #[tokio::main]
 async fn main() {
-    // ! Change this to use a different provider.
-    let provider = LanguageModelProvider::Ollama;
+    let (lm, provider) = get_lm();
+
+    if provider == LanguageModelProvider::Anthropic {
+        println!("Anthropic does not have built-in embedding models. Skipping example.");
+        return;
+    }
 
     let text = "Lorem ipsum";
 
     println!("Text: {text}");
     println!("---");
-
-    // Use a different language model, per the `provider` variable (feel free to change it).
-    let open_ai_api_key = {
-        if provider == LanguageModelProvider::OpenAi {
-            std::env::var("OPENAI_API_KEY")
-                .unwrap_or_else(|_| panic!("OPENAI_API_KEY environment variable not set"))
-        } else {
-            String::new()
-        }
-    };
-    let lm: Box<dyn LanguageModel> = match provider {
-        LanguageModelProvider::Ollama => Box::new(
-            OllamaBuilder::new()
-                .with_embeddings_model(ollama_embedding_model::NOMIC_EMBED_TEXT.to_string())
-                .try_build()
-                .unwrap(),
-        ),
-        LanguageModelProvider::OpenAi => Box::new(
-            OpenAiBuilder::new()
-                .with_api_key(open_ai_api_key)
-                .try_build()
-                .unwrap(),
-        ),
-    };
 
     let executor = TextExecutorBuilder::new()
         .with_lm(&*lm)

@@ -49,26 +49,37 @@ jobs:
 
       - uses: Swatinem/rust-cache@v1
 
-      - name: Install and run ollama
-        run: |
-          ./scripts/ci.sh
-
-      - name: Run cargo test
+      - name: Unit tests
         uses: actions-rs/cargo@v1
         with:
           command: test
 
-      - name: Run examples
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --examples
-
-      - name: Run doc tests
+      - name: Doc tests
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --doc
+
+      # TODO: Test with Ollama.
+      # - name: Install and run ollama
+      #   run: |
+      #     ./scripts/ci.sh
+
+      # - name: Examples (Ollama)
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: test
+      #     args: -p core --examples -- ollama
+
+      - name: Examples (OpenAI)
+        run: ./scripts/examples.sh openai
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY_E2E }}
+
+      - name: Examples (Anthropic)
+        run: ./scripts/examples.sh anthropic
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_E2E }}
 
   lints:
     name: Lints
