@@ -1,5 +1,5 @@
-mod config;
 mod builder;
+mod config;
 mod lm;
 mod models;
 

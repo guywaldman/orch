@@ -7,8 +7,8 @@ use crate::lm::{
 };
 
 use super::client::{
+    anthropic_client::AnthropicClientTextCompleteOptionsBuilder,
     builder::AnthropicClientBuilder,
-    client::AnthropicClientTextCompleteOptionsBuilder,
     models::{AnthropicMessage, AnthropicMessageRole},
 };
 

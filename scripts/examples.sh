@@ -10,7 +10,7 @@ if [[ "$provider" != "ollama" && "$provider" != "openai" && "$provider" != "anth
 	exit 1
 fi
 
-PASSED=1
+FAILURE=0
 
 info "Running all examples in the 'orch' crate for provider $provider..."
 pushd core 2>&1 >/dev/null
@@ -19,7 +19,7 @@ for example in $(find examples -name '*.rs'); do
 	info "Running example: $(basename $example)"
 	cargo run --quiet --example $(basename $example) -- $provider 1>/dev/null
 	if [ $? -ne 0 ]; then
-		PASSED=0
+		FAILURE=1
 		error "Example $(basename $example) failed"
 	fi
 	success "Example $(basename $example) succeeded"
@@ -27,4 +27,4 @@ done
 popd 2>&1 >/dev/null
 info "Ran all examples in the 'orch' crate for provider $provider"
 
-exit $PASSED
+exit $FAILURE

@@ -22,8 +22,8 @@ pub enum AlignmentError {
     MaxRetriesExceeded(usize),
 }
 
-pub struct AlignmentStrategy {
-    pub(crate) lm: Box<dyn LanguageModel>,
+pub struct AlignmentStrategy<'a> {
+    pub(crate) lm: &'a dyn LanguageModel,
     pub(crate) retries: usize,
 }
 
@@ -103,7 +103,7 @@ pub struct FailResponseVariant {
     pub reason: String,
 }
 
-impl AlignmentStrategy {
+impl<'a> AlignmentStrategy<'a> {
     const PREAMBLE: &'static str = "
     Your purpose is to receive a response from a language model and make sure (and correct otherwise) whether the response is expected or not.  
     Being \"expected\" means that the response is correct and matches the expected output.
@@ -115,7 +115,7 @@ impl AlignmentStrategy {
     /// Aligns the response of the language model.
     /// Tries at least once, and continues according to the [`AlignmentStrategy`]
     /// (e.g., number of retries).
-    pub async fn align<'a>(
+    pub async fn align(
         &self,
         base_lm: &'a dyn LanguageModel,
         original_preamble: &str,
@@ -257,7 +257,7 @@ impl AlignmentStrategy {
         }
 
         let executor: StructuredExecutor<AlignmentResponse> = StructuredExecutorBuilder::new()
-            .with_lm(&*self.lm)
+            .with_lm(self.lm)
             .with_preamble(&preamble)
             .with_options(Box::new(variants!(AlignmentResponse)))
             .try_build()

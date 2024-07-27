@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use super::{client::AnthropicClient, config};
+use super::{anthropic_client::AnthropicClient, config};
 
 #[derive(Debug, Error)]
 pub enum AnthropicBuilderError {

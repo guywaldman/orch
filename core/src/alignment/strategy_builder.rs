@@ -14,12 +14,12 @@ pub enum AlignmentStrategyBuilderError {
 }
 
 #[derive(Default)]
-pub struct AlignmentStrategyBuilder {
-    lm: Option<Box<dyn LanguageModel>>,
+pub struct AlignmentStrategyBuilder<'a> {
+    lm: Option<&'a dyn LanguageModel>,
     retries: Option<usize>,
 }
 
-impl AlignmentStrategyBuilder {
+impl<'a> AlignmentStrategyBuilder<'a> {
     /// Creates a new `AlignmentStrategyBuilder` instance.
     pub fn new() -> Self {
         Self {
@@ -29,7 +29,7 @@ impl AlignmentStrategyBuilder {
     }
 
     /// Sets the language model to use for the alignment strategy.
-    pub fn with_lm(mut self, lm: Box<dyn LanguageModel>) -> Self {
+    pub fn with_lm(mut self, lm: &'a dyn LanguageModel) -> Self {
         self.lm = Some(lm);
         self
     }
@@ -42,7 +42,7 @@ impl AlignmentStrategyBuilder {
 
     /// Builds the alignment strategy.
     /// May fail with a [`AlignmentStrategyBuilderErrro`] if some required configurations are not set.
-    pub fn try_build(self) -> Result<AlignmentStrategy, AlignmentStrategyBuilderError> {
+    pub fn try_build(self) -> Result<AlignmentStrategy<'a>, AlignmentStrategyBuilderError> {
         let Some(lm) = self.lm else {
             return Err(AlignmentStrategyBuilderError::ConfigurationNotSet(
                 "Language model".to_string(),
