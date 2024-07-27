@@ -45,18 +45,9 @@ pub struct FailResponseVariant {
 
 #[tokio::main]
 async fn main() {
-    let lm = get_lm(
-        std::env::args()
-            .nth(1)
-            .unwrap_or("ollama".to_owned())
-            .as_str(),
-    );
+    let (lm, _) = get_lm();
 
-    let args = std::env::args().collect::<Vec<_>>();
-    let prompt = args.get(1).unwrap_or_else(|| {
-        eprintln!("ERROR: Please provide a country name");
-        std::process::exit(1);
-    });
+    let country = "France";
 
     let executor = StructuredExecutorBuilder::new()
         .with_lm(&*lm)
@@ -67,11 +58,12 @@ async fn main() {
         .with_options(Box::new(variants!(ResponseVariants)))
         .try_build()
         .unwrap();
-    let response = executor.execute(prompt).await.expect("Execution failed");
+    let response = executor.execute(country).await.expect("Execution failed");
 
     match response.content {
         ResponseVariants::Answer(answer) => {
-            println!("Capital city: {}", answer.capital);
+            println!("Capital city of {}: {}", country, answer.capital);
+            assert_eq!(answer.capital, "Paris");
         }
         ResponseVariants::Fail(fail) => {
             println!("Model failed to generate a response: {}", fail.reason);

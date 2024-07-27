@@ -46,21 +46,16 @@ pub struct FailResponseVariant {
 
 #[tokio::main]
 async fn main() {
-    let lm = get_lm(
-        std::env::args()
-            .nth(1)
-            .unwrap_or("ollama".to_owned())
-            .as_str(),
-    );
+    let (lm, _) = get_lm();
 
-    let args = std::env::args().collect::<Vec<_>>();
-    let blog_file_path = args.get(1).unwrap_or_else(|| {
-        eprintln!("ERROR: Please provide a path to a blog file");
-        std::process::exit(1);
-    });
-    let prompt = std::fs::read_to_string(blog_file_path).expect("Failed to read blog file");
+    // Mock blog post
+    let prompt = "
+        This is a blog post about the importance of blogging.
 
-    println!("Analyzing blog post at path '{blog_file_path}'...");
+        # Introduction
+
+        Blogging is a crucial skill for any writer. It allows you to share your thoughts and ideas with others, and it can help you build a following and establish yourself as an expert in your field.
+    ";
 
     let executor = StructuredExecutorBuilder::new()
         .with_lm(&*lm)
@@ -77,17 +72,20 @@ async fn main() {
         .with_options(Box::new(variants!(ResponseVariants)))
         .try_build()
         .unwrap();
-    let response = executor.execute(&prompt).await.expect("Execution failed");
+    let response = executor.execute(prompt).await.expect("Execution failed");
 
     match response.content {
         ResponseVariants::Answer(answer) => {
+            assert!(!answer.suggestions.is_empty());
+
             println!("Suggestions for improving the blog post:");
             for suggestion in answer.suggestions {
                 println!("- {}", suggestion);
             }
         }
         ResponseVariants::Fail(fail) => {
-            println!("Model failed to generate a response: {}", fail.reason);
+            eprintln!("Model failed to generate a response: {}", fail.reason);
+            std::process::exit(1);
         }
     }
 }

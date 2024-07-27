@@ -3,8 +3,13 @@ use orch::lm::{
     OpenAiBuilder,
 };
 
-pub fn get_lm(provider_name: &str) -> Box<dyn LanguageModel> {
-    let provider = LanguageModelProvider::try_from(provider_name)
+pub fn get_lm() -> (Box<dyn LanguageModel>, LanguageModelProvider) {
+    let args = std::env::args().collect::<Vec<_>>();
+    let provider_name = args.get(1).unwrap_or_else(|| {
+        eprintln!("ERROR: Please provide a provider name");
+        std::process::exit(1);
+    });
+    let provider = LanguageModelProvider::try_from(provider_name.as_str())
         .expect("Invalid provider name. Supported values: 'ollama', 'openai', 'anthropic'");
 
     let open_ai_api_key = {
@@ -23,7 +28,7 @@ pub fn get_lm(provider_name: &str) -> Box<dyn LanguageModel> {
             String::new()
         }
     };
-    match provider {
+    let lm: Box<dyn LanguageModel> = match provider {
         LanguageModelProvider::Ollama => Box::new(OllamaBuilder::new().try_build().unwrap()),
         LanguageModelProvider::OpenAi => Box::new(
             OpenAiBuilder::new()
@@ -37,7 +42,10 @@ pub fn get_lm(provider_name: &str) -> Box<dyn LanguageModel> {
                 .try_build()
                 .unwrap(),
         ),
-    }
+    };
+
+    (lm, provider)
 }
 
+#[allow(dead_code)]
 fn main() {}

@@ -1,6 +1,5 @@
 mod builder;
 mod client;
-mod config;
 mod lm;
 mod models;
 

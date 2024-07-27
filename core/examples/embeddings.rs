@@ -4,16 +4,16 @@
 mod example_utils;
 use example_utils::get_lm;
 
-use orch::execution::*;
+use orch::{execution::*, lm::LanguageModelProvider};
 
 #[tokio::main]
 async fn main() {
-    let lm = get_lm(
-        std::env::args()
-            .nth(1)
-            .unwrap_or("ollama".to_owned())
-            .as_str(),
-    );
+    let (lm, provider) = get_lm();
+
+    if provider == LanguageModelProvider::Anthropic {
+        println!("Anthropic does not have built-in embedding models. Skipping example.");
+        return;
+    }
 
     let text = "Lorem ipsum";
 

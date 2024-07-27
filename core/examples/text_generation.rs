@@ -8,12 +8,7 @@ use example_utils::get_lm;
 
 #[tokio::main]
 async fn main() {
-    let lm = get_lm(
-        std::env::args()
-            .nth(1)
-            .unwrap_or("ollama".to_owned())
-            .as_str(),
-    );
+    let (lm, _) = get_lm();
 
     let prompt = "What is 2+2?";
 
@@ -28,4 +23,6 @@ async fn main() {
 
     println!("Response:");
     println!("{}", response.content);
+
+    assert!(response.content.contains('4'));
 }
